@@ -5,7 +5,7 @@ i'm developing this on an early 2015 mbp. it has a 2.7ghz i5, 8gb memory, and is
 my system gcc version was 4.2.1. i updated to the [latest version](https://wiki.osdev.org/Building_GCC) which was 10.2.0:
 
 ```
-// paths relative to the directory containing gcc source
+# paths relative to the directory containing gcc source
 mkdir gccbuild
 cd gccbuild
 ../gcc-10.2.0/configure \
@@ -14,7 +14,7 @@ cd gccbuild
 --enable-checking=release \
 --with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
-// this took over 12? hours on my poor lil laptop :'-)
+# this took over 12? hours on my poor lil laptop :'-)
 make -j8
 sudo make install-strip
 ```
@@ -47,7 +47,7 @@ sudo make install-gcc
 sudo make install-target-libgcc
 ```
 
-and binutils:
+and cross binutils, version 2.35:
 
 ```
 export PREFIX=/usr/local/binutils-2.35-cross
