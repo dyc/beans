@@ -4,7 +4,7 @@ i'm developing this on an early 2015 mbp. it has a 2.7ghz i5, 8gb memory, and is
 
 my system gcc version was 4.2.1. i updated to the [latest version](https://wiki.osdev.org/Building_GCC) which was 10.2.0:
 
-```
+```sh
 # paths relative to the directory containing gcc source
 mkdir gccbuild
 cd gccbuild
@@ -21,7 +21,7 @@ sudo make install-strip
 
 next i built the cross compiler using new gcc:
 
-```
+```sh
 export CC=/usr/local/gcc-10.2.0/bin/gcc-10.2
 export CXX=/usr/local/gcc-10.2.0/bin/g++-10.2
 export CPP=/usr/local/gcc-10.2.0/bin/cpp-10.2
@@ -49,7 +49,7 @@ sudo make install-target-libgcc
 
 and cross binutils, version 2.35:
 
-```
+```sh
 export PREFIX=/usr/local/binutils-2.35-cross
 
 mkdir binutilscross
