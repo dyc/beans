@@ -1,8 +1,8 @@
-i'm developing this on an early 2015 mbp. it has a 2.7ghz i5, 8gb memory, and is running macos 10.14.6.
+we're developing this on an early 2015 mbp. it has a 2.7ghz i5, 8gb memory, and is running macos 10.14.6.
 
 # cross compiler
 
-my system gcc version was 4.2.1. i updated to the [latest version](https://wiki.osdev.org/Building_GCC) which was 10.2.0:
+our system gcc version was 4.2.1. we updated to the [latest version](https://wiki.osdev.org/Building_GCC) which was 10.2.0:
 
 ```sh
 # paths relative to the directory containing gcc source
@@ -14,46 +14,41 @@ cd gccbuild
 --enable-checking=release \
 --with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
-# this took over 12? hours on my poor lil laptop :'-)
+# this took 16? hours on my poor lil laptop :'-)
 make -j8
 sudo make install-strip
 ```
 
-next i built the cross compiler using new gcc:
+next we tell `make` to use gcc-10.2:
 
 ```sh
 export CC=/usr/local/gcc-10.2.0/bin/gcc-10.2
 export CXX=/usr/local/gcc-10.2.0/bin/g++-10.2
 export CPP=/usr/local/gcc-10.2.0/bin/cpp-10.2
 export LD=/usr/local/gcc-10.2.0/bin/gcc-10.2
-export TARGET=i686-elf
-export PREFIX=/usr/local/gcc-10.2.0-cross
-export PATH="$PREFIX/bin:$PATH"
-
-mkdir gcccrossbuild
-cd gcccrossbuild
-../gcc-10.2.0/configure \
---prefix="$PREFIX" \
---program-suffix=-10.2-cross \
---target=$TARGET \
---disable-nls \
---enable-languages=c,c++ \
---without-headers \
---with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-
-make all-gcc
-make all-target-libgcc
-sudo make install-gcc
-sudo make install-target-libgcc
 ```
 
-and cross binutils, version 2.35:
+and set a home for our cross builds:
 
 ```sh
-export PREFIX=/usr/local/binutils-2.35-cross
+# isolate cross environment from system tools
+export PREFIX=/usr/local/cross
+export PATH="$PREFIX/bin:$PATH"
+```
 
-mkdir binutilscross
-cd binutilscross
+as well as the cross target we're building for:
+
+```sh
+export TARGET=i686-elf
+```
+
+now we build binutils for our cross compiler.
+do this before building gcc, which (probably?)
+needs/links target libraries:
+
+```sh
+mkdir crossbin
+cd crossbin
 ../binutils-2.35/configure \
 --target=$TARGET \
 --prefix="$PREFIX" \
@@ -63,4 +58,26 @@ cd binutilscross
 
 make -j8
 sudo make install
+```
+
+and the cross compiler:
+
+```sh
+cd gcc-10.2.0
+./contrib/download_prequisites
+cd ..
+mkdir crossgcc
+cd crossgcc
+../gcc-10.2.0/configure \
+--prefix="$PREFIX" \
+--target=$TARGET \
+--disable-nls \
+--enable-languages=c,c++ \
+--without-headers \
+--with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+
+make -j8 all-gcc
+make -j8 all-target-libgcc
+sudo make install-gcc
+sudo make install-target-libgcc
 ```
