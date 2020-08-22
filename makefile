@@ -7,16 +7,14 @@ OBJ_DIR=obj
 SRC_DIR=src
 BIN_DIR=bin
 
-C_SOURCES=$(wildcard $(SRC_DIR)/*.c)
-ASM_SOURCES=$(wildcard $(SRC_DIR)/*.s)
-C_OBJS=$(C_SOURCES:$(SRC_DIR)/.c=$(OBJ_DIR)/.o)
-ASM_OBJS=$(ASM_SOURCES:$(SRC_DIR)/.s=$(OBJ_DIR)/.o)
-
+# order matters here (for linking)
 CRTI_OBJ=$(OBJ_DIR)/crti.o
 CRTBEGIN_OBJ:=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
+KERNEL_OBJ=$(OBJ_DIR)/kernel.o
+BOOT_OBJ=$(OBJ_DIR)/boot.o
 CRTEND_OBJ:=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
 CRTN_OBJ=$(OBJ_DIR)/crtn.o
-OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(C_OBJS) $(ASM_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
+OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJ) $(BOOT_OBJ) $(CRTEND_OBJ) $(CRTN_OBJ)
 
 all: myos.iso
 
