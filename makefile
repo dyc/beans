@@ -1,6 +1,7 @@
 PREFIX=/usr/local/cross
 AS=$(PREFIX)/bin/i686-elf-as
 CC=$(PREFIX)/bin/i686-elf-gcc
+CFLAGS=-O2 -Wall -Wextra
 
 ISO_DIR=iso
 OBJ_DIR=obj
@@ -21,7 +22,7 @@ all: myos.iso
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(OBJ_DIR)
-	${CC} -c $< -o $@ -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+	${CC} -c $< -o $@ -std=gnu99 -ffreestanding $(CFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.s
 	@mkdir -p $(OBJ_DIR)
@@ -29,7 +30,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.s
 
 $(BIN_DIR)/myos.bin: $(OBJS)
 	@mkdir -p $(BIN_DIR)
-	${CC} -T linker.ld -o $@ -ffreestanding -O2 -nostdlib $^ -lgcc
+	${CC} -T linker.ld -o $@ -ffreestanding -nostdlib $(CFLAGS) $^ -lgcc
 
 check: $(BIN_DIR)/myos.bin
 	grub-file --is-x86-multiboot $(BIN_DIR)/myos.bin
