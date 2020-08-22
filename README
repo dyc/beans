@@ -1,6 +1,8 @@
+# setup
+
 we're developing this on an early 2015 mbp. it has a 2.7ghz i5, 8gb memory, and is running macos 10.14.6.
 
-# cross compiler
+## cross toolchain
 
 our system gcc version was 4.2.1. we updated to the [latest version](https://wiki.osdev.org/Building_GCC) which was 10.2.0:
 
@@ -80,4 +82,23 @@ make -j8 all-gcc
 make -j8 all-target-libgcc
 sudo make install-gcc
 sudo make install-target-libgcc
+```
+
+if you'd like grub:
+
+```sh
+# need [objconv](http://www.agner.org/optimize/objconv.zip)
+mkdir objconvbuild
+/usr/local/gcc-10.2.0/bin/g++-10.2 -o objconv -O2 src/*.cpp --prefix="$PREFIX"
+cp objconv "$PREFIX/bin"
+cd ..
+
+cd grub-2.04
+./autogen.sh
+# i had to make this 2-line patch to get 2.04 to build:
+# # https://www.mail-archive.com/grub-devel@gnu.org/msg29007.html
+cd ..
+mkdir grubbuild
+cd grubbuild
+../grub-2.04/configure --prefix="$PREFIX" --target=$TARGET --disable-werror
 ```
