@@ -4,7 +4,7 @@
 
 # setup
 
-we're developing this on an early 2015 mbp. it has a 2.7ghz i5, 8gb memory, and is running macos 10.14.6.
+we're developing this on an early 2015 mbp. it has an 2.7ghz i5, 8gb memory, and is running macos 10.14.6.
 
 ## cross toolchain
 
