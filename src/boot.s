@@ -31,7 +31,9 @@ stack_top:
 _start:
       # yay stack pointer
       mov $stack_top, %esp
+      call _init
       call kernel_main
+      call _fini
       cli
   1:  hlt
       jmp 1b

@@ -11,6 +11,7 @@ BIN_DIR=bin
 CRTI_OBJ=$(OBJ_DIR)/crti.o
 CRTBEGIN_OBJ:=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 KERNEL_OBJ=$(OBJ_DIR)/kernel.o
+# effectively our crt0.o
 BOOT_OBJ=$(OBJ_DIR)/boot.o
 CRTEND_OBJ:=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
 CRTN_OBJ=$(OBJ_DIR)/crtn.o
