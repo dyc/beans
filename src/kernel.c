@@ -68,7 +68,8 @@ void terminal_initialize(void) {
 }
 
 void terminal_scroll(void) {
-  for (size_t y = 0; y < VGA_HEIGHT - 1; y++) {
+  const size_t last_row = VGA_HEIGHT - 1;
+  for (size_t y = 0; y < last_row; y++) {
     for (size_t x = 0; x < VGA_WIDTH; x++) {
       const size_t this_row_index = y * VGA_WIDTH + x;
       const size_t next_row_index = (y + 1) * VGA_WIDTH + x;
@@ -76,11 +77,13 @@ void terminal_scroll(void) {
     }
   }
 
-  size_t last_row = VGA_HEIGHT - 1;
   for (size_t x = 0; x < VGA_WIDTH; x++) {
     const size_t index = last_row * VGA_WIDTH + x;
     terminal_buffer[index] = vga_entry(' ', terminal_color);
   }
+
+  terminal_row = last_row;
+  terminal_column = 0;
 }
 
 void terminal_setcolor(uint8_t color) {
@@ -95,7 +98,7 @@ void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
 void terminal_putchar(char c) {
   if (c == '\n') {
     if (++terminal_row == VGA_HEIGHT) {
-      terminal_row = 0;
+      terminal_scroll();
     }
     terminal_column = 0;
     return;
@@ -121,5 +124,7 @@ void terminal_writestring(const char* data) {
 
 void kernel_main(void) {
   terminal_initialize();
-  terminal_writestring("Hello,\nkernel World!\n");
+  for (size_t i = 0; i < VGA_HEIGHT; i++) {
+    terminal_writestring("hello\nworld\n");
+  }
 }
