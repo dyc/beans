@@ -34,6 +34,9 @@ myos.iso: check
 	cp grub.cfg $(ISODIR)/boot/grub/grub.cfg
 	grub-mkrescue -o myos.iso $(ISODIR)
 
+qemu: myos.iso
+	qemu-system-i386 -cdrom myos.iso
+
 .PHONY: clean
 clean:
 	rm -rf $(BINDIR)
