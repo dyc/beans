@@ -112,6 +112,7 @@ brew install xorriso
 
 # doin stuff
 
-```sh
-make qemu
-```
+`make qemu`
+
+should spin up qemu with a bootloader menu. selecting `myos` will print our
+hello world.
