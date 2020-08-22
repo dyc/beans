@@ -101,4 +101,7 @@ cd ..
 mkdir grubbuild
 cd grubbuild
 ../grub-2.04/configure --prefix="$PREFIX" --target=$TARGET --disable-werror
+
+# grub-mkrescue needs this
+brew install xorriso
 ```
