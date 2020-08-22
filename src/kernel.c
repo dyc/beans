@@ -10,7 +10,6 @@
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
 
-// hardware text mode color constants
 enum vga_color {
   VGA_COLOR_BLACK = 0,
   VGA_COLOR_BLUE = 1,
@@ -54,15 +53,25 @@ size_t terminal_column;
 uint8_t terminal_color;
 uint16_t* terminal_buffer;
 
+uint8_t light_grey_on_black;
+uint8_t magenta_on_brown;
+uint8_t cyan_on_green;
+uint16_t empty_space;
+
 void terminal_initialize(void) {
+  light_grey_on_black = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+  magenta_on_brown = vga_entry_color(VGA_COLOR_MAGENTA, VGA_COLOR_BROWN);
+  cyan_on_green = vga_entry_color(VGA_COLOR_CYAN, VGA_COLOR_GREEN);
+  empty_space = vga_entry(' ', light_grey_on_black);
+
   terminal_row = 0;
   terminal_column = 0;
-  terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+  terminal_color = light_grey_on_black;
   terminal_buffer = (uint16_t*) 0xB8000;
   for (size_t y = 0; y < VGA_HEIGHT; y++) {
     for (size_t x = 0; x < VGA_WIDTH; x++) {
       const size_t index = y * VGA_WIDTH + x;
-      terminal_buffer[index] = vga_entry(' ', terminal_color);
+      terminal_buffer[index] = empty_space;
     }
   }
 }
@@ -79,7 +88,7 @@ void terminal_scroll(void) {
 
   for (size_t x = 0; x < VGA_WIDTH; x++) {
     const size_t index = last_row * VGA_WIDTH + x;
-    terminal_buffer[index] = vga_entry(' ', terminal_color);
+    terminal_buffer[index] = empty_space;
   }
 
   terminal_row = last_row;
@@ -122,9 +131,17 @@ void terminal_writestring(const char* data) {
   terminal_write(data, strlen(data));
 }
 
+void terminal_writecolorstring(const char* data, uint8_t color) {
+  uint8_t old_color = terminal_color;
+  terminal_setcolor(color);
+  terminal_write(data, strlen(data));
+  terminal_setcolor(old_color);
+}
+
 void kernel_main(void) {
   terminal_initialize();
   for (size_t i = 0; i < VGA_HEIGHT; i++) {
-    terminal_writestring("hello\nworld\n");
+    terminal_writecolorstring("hello\n", vga_entry_color(VGA_COLOR_MAGENTA, VGA_COLOR_BROWN));
+    terminal_writecolorstring("world\n", vga_entry_color(VGA_COLOR_CYAN, VGA_COLOR_GREEN));
   }
 }
