@@ -1,6 +1,6 @@
 * [setup](#setup)
-    * [cross toolchain](##cross-toolchain)
-* [running](#running)
+    * [cross toolchain](#cross-toolchain)
+* [doin stuff](#doin-stuff)
 
 # setup
 
@@ -110,7 +110,7 @@ cd grubbuild
 brew install xorriso
 ```
 
-# running
+# doin stuff
 
 ```sh
 make qemu
