@@ -1,12 +1,12 @@
-1. [setup](#setup)
-  - [cross toolchain](##cross-toolchain)
-2. [running](#running)
+* [setup](#setup)
+    * [cross toolchain](##cross-toolchain)
+* [running](#running)
 
-#setup
+# setup
 
 we're developing this on an early 2015 mbp. it has a 2.7ghz i5, 8gb memory, and is running macos 10.14.6.
 
-##cross toolchain
+## cross toolchain
 
 our system gcc version was 4.2.1. we updated to the [latest version](https://wiki.osdev.org/Building_GCC) which was 10.2.0:
 
@@ -110,7 +110,7 @@ cd grubbuild
 brew install xorriso
 ```
 
-#running
+# running
 
 ```sh
 make qemu
