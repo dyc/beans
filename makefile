@@ -3,30 +3,40 @@ AS=$(PREFIX)/bin/i686-elf-as
 CC=$(PREFIX)/bin/i686-elf-gcc
 ISODIR=iso
 OBJDIR=obj
+SRCDIR=src
+BINDIR=bin
+CSOURCES=$(wildcard $(SRCDIR)/*.c)
+ASMSOURCES=$(wildcard $(SRCDIR)/*.s)
+COBJECTS=$(CSOURCES:$(SRCDIR)/.c=$(OBJDIR)/.o)
+ASMOBJECTS=$(ASMSOURCES:$(SRCDIR)/.s=$(OBJDIR)/.o)
 
 all: myos.iso
 
-$(OBJDIR)/%.o: %.c
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(OBJDIR)
 	${CC} -c $< -o $@ -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 
-$(OBJDIR)/%.o: %.s
+$(OBJDIR)/%.o: $(SRCDIR)/%.s
+	@mkdir -p $(OBJDIR)
 	${AS} $< -o $@
 
-myos.bin: $(wildcard $(OBJDIR)/*.o)
+$(BINDIR)/myos.bin: $(COBJECTS) $(ASMOBJECTS)
+	@mkdir -p $(BINDIR)
 	${CC} -T linker.ld -o $@ -ffreestanding -O2 -nostdlib $^ -lgcc
 
-check: myos.bin
-	grub-file --is-x86-multiboot myos.bin
+check: $(BINDIR)/myos.bin
+	grub-file --is-x86-multiboot $(BINDIR)/myos.bin
 
-myos.iso:
-	check
+myos.iso: check
 	rm -rf $(ISODIR)
 	mkdir -p $(ISODIR)/boot/grub
-	cp myos.bin $(ISODIR)/boot/myos.bin
+	cp $(BINDIR)/myos.bin $(ISODIR)/boot/myos.bin
 	cp grub.cfg $(ISODIR)/boot/grub/grub.cfg
-	grub-mkrescue -o myos.iso isodir
+	grub-mkrescue -o myos.iso $(ISODIR)
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJDIR)/*.o
+	rm -rf $(BINDIR)
 	rm -rf $(ISODIR)
+	rm -rf $(OBJDIR)
+	rm myos.iso
