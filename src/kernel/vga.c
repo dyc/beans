@@ -15,8 +15,8 @@ static const short CURSOR_ENABLE_HIGH = 0x0A;
 static const short CURSOR_ENABLE_LOW = 0x0B;
 static const short CURSOR_POS_HIGH = 0x0E;
 static const short CURSOR_POS_LOW = 0x0F;
-static const short CURSOR_DISABLE_BIT = 0x20;
-static const short CURSOR_MIN_SCANLINE = 0x00;
+static const short CURSOR_DISABLE_MASK = 0x20;
+static const short CURSOR_ENABLE_MASK = ~0x20;
 static const short CURSOR_MAX_SCANLINE = 0x0F;
 static uint16_t EMPTY_CELL;
 
@@ -83,15 +83,14 @@ static void putchar(char c) {
 
 void enable_cursor() {
   outb(COMMAND_PORT, CURSOR_ENABLE_HIGH);
-  // TODO: check inb() as well as the 0xC0 and 0xE0 magic nums
-  outb(DATA_PORT, (inb(DATA_PORT) & 0xC0) | CURSOR_MIN_SCANLINE);
+  outb(DATA_PORT, (inb(DATA_PORT) & CURSOR_ENABLE_MASK));
   outb(COMMAND_PORT, CURSOR_ENABLE_LOW);
-  outb(DATA_PORT, (inb(DATA_PORT) & 0xE0) | CURSOR_MAX_SCANLINE);
+  outb(DATA_PORT, CURSOR_MAX_SCANLINE);
 }
 
 void disable_cursor() {
   outb(COMMAND_PORT, CURSOR_ENABLE_HIGH);
-  outb(DATA_PORT, CURSOR_DISABLE_BIT);
+  outb(DATA_PORT, CURSOR_DISABLE_MASK);
 }
 
 void move_cursor(size_t x, size_t y) {

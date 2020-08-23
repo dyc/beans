@@ -12,4 +12,7 @@ void kmain(void) {
     vga_bg(VGA_COLOR_GREEN);
     vga_writestring("world\n");
   }
+  vga_fg(VGA_COLOR_LIGHT_GREY);
+  vga_bg(VGA_COLOR_BLACK);
+  vga_writestring("boop");
 }
