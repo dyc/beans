@@ -1,14 +1,16 @@
 .global outb
 .type outb, @function
+# equivalent c:
+# asm volatile ("outb %1, %0" : : "dN" (port), "a" (data));
 outb:
-    mov -8(%esp), %al
-    mov -4(%esp), %dx
-    out %al, %dx
+    movl 8(%esp), %eax
+    movl 4(%esp), %edx
+    outb %al, %dx
     ret
 
 .global inb
 .type inb, @function
 inb:
-    mov -4(%esp), %dx
-    in %dx, %ax
+    movl 4(%esp), %edx
+    inb %dx, %al
     ret
