@@ -8,6 +8,7 @@
 const size_t VGA_WIDTH = 80;
 const size_t VGA_HEIGHT = 25;
 
+static const int VGA_TEXT_START = 0xB8000;
 static const short COMMAND_PORT = 0x3D4;
 static const short DATA_PORT = 0x3D5;
 static const short CURSOR_ENABLE_HIGH = 0x0A;
@@ -96,16 +97,16 @@ void disable_cursor() {
 void move_cursor(size_t x, size_t y) {
   uint16_t i = (uint16_t) buffer_i(x, y);
   outb(COMMAND_PORT, CURSOR_POS_HIGH);
-  outb(DATA_PORT,    ((i >> 8) & 0xFF));
+  outb(DATA_PORT, (i >> 8));
   outb(COMMAND_PORT, CURSOR_POS_LOW);
-  outb(DATA_PORT,    (i & 0xFF));
+  outb(DATA_PORT, i);
 }
 
 void write(const char* data, size_t size) {
   for (size_t i = 0; i < size; i++) {
     putchar(data[i]);
   }
-  move_cursor(row, col);
+  move_cursor(col, row);
 }
 
 void vga_fg(enum vga_color c) {
@@ -121,7 +122,7 @@ void vga_writestring(const char* s) {
 }
 
 void vga_init() {
-  buffer = (uint16_t*) 0xB8000;
+  buffer = (uint16_t*) VGA_TEXT_START;
   EMPTY_CELL = vga_cell(' ', VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
   row = 0;
   col = 0;
@@ -134,6 +135,7 @@ void vga_init() {
     }
   }
 
+  // test outb() and inb() implmentations
   disable_cursor();
   enable_cursor();
 }
