@@ -114,7 +114,7 @@ cd grubbuild
 
 # doin stuff
 
-`make qemu`
+`make run`
 
 should spin up qemu with a bootloader menu. selecting `myos` will run our
 hello world.

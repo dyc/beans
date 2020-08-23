@@ -1,7 +1,6 @@
 PREFIX=/usr/local/cross
 AS=$(PREFIX)/bin/i686-elf-as
 CC=$(PREFIX)/bin/i686-elf-gcc
-CFLAGS=-O2 -Wall -Wextra -Werror
 
 BUILD_DIR=build
 BIN_DIR=$(BUILD_DIR)/bin
@@ -11,30 +10,38 @@ KERNEL_BUILD_DIR=$(BUILD_DIR)/kernel
 SRC_DIR=src
 BOOT_SRC_DIR=$(SRC_DIR)/boot
 KERNEL_SRC_DIR=$(SRC_DIR)/kernel
+SYSROOT_SRC_DIR=$(SRC_DIR)/sysroot
 
+#### kernel ####
+KCFLAGS=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
 CRTI_OBJ=$(KERNEL_BUILD_DIR)/crti.o
-CRTBEGIN_OBJ=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
-KERNEL_OBJ=$(KERNEL_BUILD_DIR)/main.o
-# effectively crt0.o
-KERNEL_BOOT_OBJ=$(KERNEL_BUILD_DIR)/boot.o
-CRTEND_OBJ=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
 CRTN_OBJ=$(KERNEL_BUILD_DIR)/crtn.o
+CRTBEGIN_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtbegin.o)
+CRTEND_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtend.o)
+# c sources
+KERNEL_OBJS=$(patsubst %.c,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.c))
+# asm sources
+KERNEL_OBJS:=$(KERNEL_OBJS) $(patsubst %.S,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.S))
+# source path -> build path
+KERNEL_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_OBJS))
 # link order matters here
-OBJS=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJ) $(KERNEL_BOOT_OBJ) $(CRTEND_OBJ) $(CRTN_OBJ)
+KERNEL_OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
+
+KERNEL_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
 
 all: $(BIN_DIR)/bbos.iso
 
-$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
+$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
 	@mkdir -p $(KERNEL_BUILD_DIR)
-	${CC} -c $< -o $@ -std=gnu99 -ffreestanding $(CFLAGS)
+	${CC} -c $< -o $@ $(KCFLAGS)
 
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.S
 	@mkdir -p $(KERNEL_BUILD_DIR)
 	${AS} $< -o $@
 
-$(BIN_DIR)/bbos.bin: $(OBJS)
+$(BIN_DIR)/bbos.bin: $(KERNEL_OBJS)
 	@mkdir -p $(BIN_DIR)
-	${CC} -T $(KERNEL_SRC_DIR)/linker.ld -o $@ -ffreestanding -nostdlib $(CFLAGS) $^ -lgcc
+	${CC} -T $(KERNEL_SRC_DIR)/linker.ld -o $@ $(KCFLAGS) $^ -lgcc
 
 check: $(BIN_DIR)/bbos.bin
 	grub-file --is-x86-multiboot $(BIN_DIR)/bbos.bin
@@ -46,7 +53,7 @@ $(BIN_DIR)/bbos.iso: check
 	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
 	grub-mkrescue -o $(BIN_DIR)/bbos.iso $(ISO_DIR)
 
-qemu: $(BIN_DIR)/bbos.iso
+run: $(BIN_DIR)/bbos.iso
 	qemu-system-i386 -cdrom $(BIN_DIR)/bbos.iso
 
 .PHONY: clean
