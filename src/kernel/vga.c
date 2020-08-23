@@ -3,15 +3,24 @@
 #include <stdint.h>
 
 #include <kernel/vga.h>
+#include <sys/io.h>
 
-static uint16_t EMPTY_CELL;
-static uint16_t* buffer;
-size_t row;
-size_t col;
-enum vga_color fg;
-enum vga_color bg;
 const size_t VGA_WIDTH = 80;
 const size_t VGA_HEIGHT = 25;
+
+static const short COMMAND_PORT = 0x3D4;
+static const short DATA_PORT = 0x3D5;
+static const short CURSOR_ENABLE_HIGH = 0x0A;
+static const short CURSOR_ENABLE_LOW = 0x0B;
+static const short CURSOR_POS_HIGH = 0x0E;
+static const short CURSOR_POS_LOW = 0x0F;
+static uint16_t EMPTY_CELL;
+
+static uint16_t* buffer;
+static size_t row;
+static size_t col;
+static enum vga_color fg;
+static enum vga_color bg;
 
 static inline uint16_t vga_cell(unsigned char uc, enum vga_color fg, enum vga_color bg) {
   return (uint16_t) uc | (uint16_t) ((fg | bg << 4) << 8);
@@ -68,12 +77,27 @@ static void putchar(char c) {
   }
 }
 
+void enable_cursor() {
+  outb(COMMAND_PORT, CURSOR_ENABLE_HIGH);
+  outb(DATA_PORT, (inb(DATA_PORT) & 0xC0) | 0x00);
+  outb(COMMAND_PORT, CURSOR_ENABLE_LOW);
+  outb(DATA_PORT, (inb(DATA_PORT) & 0xE0) | 0x0F);
+}
+
+void move_cursor(size_t x, size_t y) {
+  uint16_t i = (uint16_t) buffer_i(x, y);
+  outb(COMMAND_PORT, CURSOR_POS_HIGH);
+  outb(DATA_PORT,    ((i >> 8) & 0xFF));
+  outb(COMMAND_PORT, CURSOR_POS_LOW);
+  outb(DATA_PORT,    (i & 0xFF));
+}
+
 void write(const char* data, size_t size) {
   for (size_t i = 0; i < size; i++) {
     putchar(data[i]);
   }
+  move_cursor(row, col);
 }
-
 void vga_fg(enum vga_color c) {
   fg = c;
 }
@@ -99,4 +123,7 @@ void vga_init() {
       buffer[buffer_i(x, y)] = EMPTY_CELL;
     }
   }
+
+  // TODO: check this
+  // enable_cursor();
 }
