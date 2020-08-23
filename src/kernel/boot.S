@@ -32,7 +32,7 @@ _start:
       # yay stack pointer
       mov $stack_top, %esp
       call _init
-      call kernel_main
+      call kmain
       call _fini
       cli
   1:  hlt

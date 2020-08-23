@@ -1,32 +1,34 @@
 PREFIX=/usr/local/cross
 AS=$(PREFIX)/bin/i686-elf-as
 CC=$(PREFIX)/bin/i686-elf-gcc
-CFLAGS=-O2 -Wall -Wextra
+CFLAGS=-O2 -Wall -Wextra -Werror
 
 BUILD_DIR=build
-OBJ_DIR=$(BUILD_DIR)/obj
+KERNEL_BUILD_DIR=$(BUILD_DIR)/kernel
 BIN_DIR=$(BUILD_DIR)/bin
 ISO_DIR=$(BUILD_DIR)/iso
+
 SRC_DIR=src
+KERNEL_SRC_DIR=$(SRC_DIR)/kernel
 
 # order matters here (for linking)
-CRTI_OBJ=$(OBJ_DIR)/crti.o
-CRTBEGIN_OBJ:=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
-KERNEL_OBJ=$(OBJ_DIR)/kernel.o
-# effectively our crt0.o
-BOOT_OBJ=$(OBJ_DIR)/boot.o
-CRTEND_OBJ:=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
-CRTN_OBJ=$(OBJ_DIR)/crtn.o
-OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJ) $(BOOT_OBJ) $(CRTEND_OBJ) $(CRTN_OBJ)
+CRTI_OBJ=$(KERNEL_BUILD_DIR)/crti.o
+CRTBEGIN_OBJ=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
+KERNEL_OBJ=$(KERNEL_BUILD_DIR)/main.o
+# effectively crt0.o
+KERNEL_BOOT_OBJ=$(KERNEL_BUILD_DIR)/boot.o
+CRTEND_OBJ=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
+CRTN_OBJ=$(KERNEL_BUILD_DIR)/crtn.o
+OBJS=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJ) $(KERNEL_BOOT_OBJ) $(CRTEND_OBJ) $(CRTN_OBJ)
 
 all: $(BIN_DIR)/bbos.iso
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(OBJ_DIR)
+$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
+	@mkdir -p $(KERNEL_BUILD_DIR)
 	${CC} -c $< -o $@ -std=gnu99 -ffreestanding $(CFLAGS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.s
-	@mkdir -p $(OBJ_DIR)
+$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.S
+	@mkdir -p $(KERNEL_BUILD_DIR)
 	${AS} $< -o $@
 
 $(BIN_DIR)/bbos.bin: $(OBJS)

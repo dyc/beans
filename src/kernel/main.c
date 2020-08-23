@@ -138,7 +138,7 @@ void terminal_writecolorstring(const char* data, uint8_t color) {
   terminal_setcolor(old_color);
 }
 
-void kernel_main(void) {
+void kmain(void) {
   terminal_initialize();
   for (size_t i = 0; i < VGA_HEIGHT; i++) {
     terminal_writecolorstring("hello\n", vga_entry_color(VGA_COLOR_MAGENTA, VGA_COLOR_BROWN));
