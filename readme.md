@@ -93,6 +93,9 @@ sudo make install-target-libgcc
 if you'd like to build your boot images with grub:
 
 ```sh
+# grub-mkrescue needs this
+brew install xorriso
+
 # need [objconv](http://www.agner.org/optimize/objconv.zip)
 mkdir objconvbuild
 /usr/local/gcc-10.2.0/bin/g++-10.2 -o objconv -O2 src/*.cpp --prefix="$PREFIX"
@@ -107,9 +110,6 @@ cd ..
 mkdir grubbuild
 cd grubbuild
 ../grub-2.04/configure --prefix="$PREFIX" --target=$TARGET --disable-werror
-
-# grub-mkrescue needs this
-brew install xorriso
 ```
 
 # doin stuff
