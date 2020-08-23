@@ -1,4 +1,1 @@
-bin/
-obj/
-iso/
-myos.iso
+build/
