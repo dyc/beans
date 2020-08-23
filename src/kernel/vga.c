@@ -98,6 +98,7 @@ void write(const char* data, size_t size) {
   }
   move_cursor(row, col);
 }
+
 void vga_fg(enum vga_color c) {
   fg = c;
 }
