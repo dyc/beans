@@ -1,15 +1,15 @@
-#include <kernel/fb.h>
+#include <kernel/vga.h>
 
 void kmain(void) {
-  fb_init();
+  vga_init();
 
-  for (size_t i = 0; i < FB_HEIGHT; i++) {
-    fb_fg(FB_COLOR_MAGENTA);
-    fb_bg(FB_COLOR_BROWN);
-    fb_writestring("hello\n");
+  for (size_t i = 0; i < VGA_HEIGHT; i++) {
+    vga_fg(VGA_COLOR_MAGENTA);
+    vga_bg(VGA_COLOR_BROWN);
+    vga_writestring("hello\n");
 
-    fb_fg(FB_COLOR_CYAN);
-    fb_bg(FB_COLOR_GREEN);
-    fb_writestring("world\n");
+    vga_fg(VGA_COLOR_CYAN);
+    vga_bg(VGA_COLOR_GREEN);
+    vga_writestring("world\n");
   }
 }
