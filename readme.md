@@ -48,9 +48,11 @@ as well as the cross target we're building for:
 export TARGET=i686-elf
 ```
 
-now we build binutils for our cross compiler.
-do this before building gcc, which (probably?)
-needs/links target libraries:
+now we build `binutils` for our cross compiler.
+do this before building gcc, which i'm guessing
+links target libraries (i ran into issues
+when i tried using a `gcc` built without cross
+utils):
 
 ```sh
 mkdir crossbin
@@ -88,7 +90,7 @@ sudo make install-gcc
 sudo make install-target-libgcc
 ```
 
-if you'd like grub:
+if you'd like to build your boot images with grub:
 
 ```sh
 # need [objconv](http://www.agner.org/optimize/objconv.zip)
