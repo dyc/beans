@@ -4,14 +4,14 @@ CC=$(PREFIX)/bin/i686-elf-gcc
 CFLAGS=-O2 -Wall -Wextra -Werror
 
 BUILD_DIR=build
-KERNEL_BUILD_DIR=$(BUILD_DIR)/kernel
 BIN_DIR=$(BUILD_DIR)/bin
 ISO_DIR=$(BUILD_DIR)/iso
+KERNEL_BUILD_DIR=$(BUILD_DIR)/kernel
 
 SRC_DIR=src
+BOOT_SRC_DIR=$(SRC_DIR)/boot
 KERNEL_SRC_DIR=$(SRC_DIR)/kernel
 
-# order matters here (for linking)
 CRTI_OBJ=$(KERNEL_BUILD_DIR)/crti.o
 CRTBEGIN_OBJ=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 KERNEL_OBJ=$(KERNEL_BUILD_DIR)/main.o
@@ -19,6 +19,7 @@ KERNEL_OBJ=$(KERNEL_BUILD_DIR)/main.o
 KERNEL_BOOT_OBJ=$(KERNEL_BUILD_DIR)/boot.o
 CRTEND_OBJ=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
 CRTN_OBJ=$(KERNEL_BUILD_DIR)/crtn.o
+# link order matters here
 OBJS=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJ) $(KERNEL_BOOT_OBJ) $(CRTEND_OBJ) $(CRTN_OBJ)
 
 all: $(BIN_DIR)/bbos.iso
@@ -33,7 +34,7 @@ $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.S
 
 $(BIN_DIR)/bbos.bin: $(OBJS)
 	@mkdir -p $(BIN_DIR)
-	${CC} -T linker.ld -o $@ -ffreestanding -nostdlib $(CFLAGS) $^ -lgcc
+	${CC} -T $(KERNEL_SRC_DIR)/linker.ld -o $@ -ffreestanding -nostdlib $(CFLAGS) $^ -lgcc
 
 check: $(BIN_DIR)/bbos.bin
 	grub-file --is-x86-multiboot $(BIN_DIR)/bbos.bin
@@ -42,7 +43,7 @@ $(BIN_DIR)/bbos.iso: check
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp $(BIN_DIR)/bbos.bin $(ISO_DIR)/boot/bbos.bin
-	cp grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
+	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
 	grub-mkrescue -o $(BIN_DIR)/bbos.iso $(ISO_DIR)
 
 qemu: $(BIN_DIR)/bbos.iso
