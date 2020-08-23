@@ -4,11 +4,11 @@
 
 # setup
 
-we're developing this on an early 2015 mbp. it has a 2.7ghz i5, 8gb memory, and is running macos 10.14.6.
+we're using an early 2015 mbp running macos 10.14.6.
 
 ## cross toolchain
 
-our system gcc version was 4.2.1. we updated to the [latest version](https://wiki.osdev.org/Building_GCC) which was 10.2.0:
+our system gcc version is 4.2.1. we update to [latest](https://wiki.osdev.org/Building_GCC) (10.2.0):
 
 ```sh
 # paths relative to the directory containing gcc source
