@@ -117,4 +117,4 @@ cd grubbuild
 
 `make run`
 
-boot bbos in qemu
+boot howdy in qemu

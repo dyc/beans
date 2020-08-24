@@ -29,7 +29,7 @@ KERNEL_OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ
 
 KERNEL_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
 
-all: $(BIN_DIR)/bbos.iso
+all: $(BIN_DIR)/howdy.iso
 
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
 	@mkdir -p $(KERNEL_BUILD_DIR)
@@ -39,22 +39,22 @@ $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.S
 	@mkdir -p $(KERNEL_BUILD_DIR)
 	${AS} $< -o $@
 
-$(BIN_DIR)/bbos.bin: $(KERNEL_OBJS)
+$(BIN_DIR)/howdy.bin: $(KERNEL_OBJS)
 	@mkdir -p $(BIN_DIR)
 	${CC} -T $(KERNEL_SRC_DIR)/linker.ld -o $@ $(KCFLAGS) $^ -lgcc
 
-check: $(BIN_DIR)/bbos.bin
-	grub-file --is-x86-multiboot $(BIN_DIR)/bbos.bin
+check: $(BIN_DIR)/howdy.bin
+	grub-file --is-x86-multiboot $(BIN_DIR)/howdy.bin
 
-$(BIN_DIR)/bbos.iso: check
+$(BIN_DIR)/howdy.iso: check
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
-	cp $(BIN_DIR)/bbos.bin $(ISO_DIR)/boot/bbos.bin
+	cp $(BIN_DIR)/howdy.bin $(ISO_DIR)/boot/howdy.bin
 	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
-	grub-mkrescue -o $(BIN_DIR)/bbos.iso $(ISO_DIR)
+	grub-mkrescue -o $(BIN_DIR)/howdy.iso $(ISO_DIR)
 
-run: $(BIN_DIR)/bbos.iso
-	qemu-system-i386 -cdrom $(BIN_DIR)/bbos.iso
+run: $(BIN_DIR)/howdy.iso
+	qemu-system-i386 -cdrom $(BIN_DIR)/howdy.iso
 
 .PHONY: clean
 clean:
