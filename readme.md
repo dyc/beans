@@ -1,6 +1,7 @@
 * [setup](#setup)
     * [cross toolchain](#cross-toolchain)
 * [doin stuff](#doin-stuff)
+* [project layout](#project-layout)
 
 # setup
 
@@ -116,5 +117,23 @@ cd grubbuild
 
 `make run`
 
-should spin up qemu with a bootloader menu. selecting `myos` will run our
-hello world.
+boot bbos in qemu
+
+# project layout
+
+currently very fluid:
+
+```sh
+build/ # trying to keep this relatively flat
+  bin/
+  iso/ # source directory passed to grub-mkrescue
+  kernel/
+src/
+  boot/
+  kernel/
+  sysroot/
+    usr/
+      include/
+        kernel/
+        sys/
+```
