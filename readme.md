@@ -3,7 +3,6 @@ _up next: serial i/o_
 * [setup](#setup)
     * [cross toolchain](#cross-toolchain)
 * [doin stuff](#doin-stuff)
-* [project layout](#project-layout)
 
 # setup
 
@@ -120,22 +119,3 @@ cd grubbuild
 `make run`
 
 boot bbos in qemu
-
-# project layout
-
-currently very fluid:
-
-```sh
-build/
-  bin/
-  iso/ # source directory passed to grub-mkrescue
-  kernel/
-src/
-  boot/
-  kernel/
-  sysroot/
-    usr/
-      include/
-        kernel/
-        sys/
-```
