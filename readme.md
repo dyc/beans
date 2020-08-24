@@ -1,3 +1,5 @@
+up next: serial i/o
+
 * [setup](#setup)
     * [cross toolchain](#cross-toolchain)
 * [doin stuff](#doin-stuff)
