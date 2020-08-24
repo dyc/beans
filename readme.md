@@ -1,4 +1,4 @@
-up next: serial i/o
+_up next: serial i/o_
 
 * [setup](#setup)
     * [cross toolchain](#cross-toolchain)
@@ -126,7 +126,7 @@ boot bbos in qemu
 currently very fluid:
 
 ```sh
-build/ # trying to keep this relatively flat
+build/
   bin/
   iso/ # source directory passed to grub-mkrescue
   kernel/
