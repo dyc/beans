@@ -2,4 +2,4 @@
 
 #include <stddef.h>
 
-extern size_t strlen(const char* str);
+extern size_t strlen(const char* s);

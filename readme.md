@@ -1,4 +1,4 @@
-_up next: serial i/o_
+_up next: gdt_
 
 * [setup](#setup)
     * [cross toolchain](#cross-toolchain)
