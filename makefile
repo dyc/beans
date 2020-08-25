@@ -54,7 +54,7 @@ $(BIN_DIR)/howdy.iso: check
 	grub-mkrescue -o $(BIN_DIR)/howdy.iso $(ISO_DIR)
 
 run: $(BIN_DIR)/howdy.iso
-	qemu-system-i386 -cdrom $(BIN_DIR)/howdy.iso
+	qemu-system-i386 -serial stdio -cdrom $(BIN_DIR)/howdy.iso
 
 .PHONY: clean
 clean:

@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <kernel/libc.h>
 #include <kernel/vga.h>
 #include <sys/io.h>
 
@@ -26,20 +27,12 @@ static size_t col;
 static enum vga_color fg;
 static enum vga_color bg;
 
-static inline uint16_t vga_cell(unsigned char uc, enum vga_color fg, enum vga_color bg) {
+static inline uint16_t vga_cell(uint8_t uc, enum vga_color fg, enum vga_color bg) {
   return (uint16_t) uc | (uint16_t) ((fg | bg << 4) << 8);
 }
 
 static inline size_t buffer_i(size_t x, size_t y) {
   return y * VGA_WIDTH + x;
-}
-
-static size_t strlen(const char* str) {
-  size_t len = 0;
-  while (str[len]) {
-    len++;
-  }
-  return len;
 }
 
 static void putentryat(char c, size_t x, size_t y) {
@@ -48,15 +41,15 @@ static void putentryat(char c, size_t x, size_t y) {
 
 void scroll() {
   const size_t last_row = VGA_HEIGHT - 1;
-  for (size_t y = 0; y < last_row; y++) {
-    for (size_t x = 0; x < VGA_WIDTH; x++) {
+  for (size_t y = 0; y < last_row; ++y) {
+    for (size_t x = 0; x < VGA_WIDTH; ++x) {
       const size_t this_row_i = buffer_i(x, y);
       const size_t next_row_i = buffer_i(x, y + 1);
       buffer[this_row_i] = buffer[next_row_i];
     }
   }
 
-  for (size_t x = 0; x < VGA_WIDTH; x++) {
+  for (size_t x = 0; x < VGA_WIDTH; ++x) {
     buffer[buffer_i(x, last_row)] = EMPTY_CELL;
   }
 
@@ -101,13 +94,6 @@ void move_cursor(size_t x, size_t y) {
   outb(DATA_PORT, i);
 }
 
-void write(const char* data, size_t size) {
-  for (size_t i = 0; i < size; i++) {
-    putchar(data[i]);
-  }
-  move_cursor(col, row);
-}
-
 void vga_fg(enum vga_color c) {
   fg = c;
 }
@@ -116,8 +102,12 @@ void vga_bg(enum vga_color c) {
   bg = c;
 }
 
-void vga_writestring(const char* s) {
-  write(s, strlen(s));
+void vga_write(const char* s) {
+  size_t len = strlen(s);
+  for (size_t i = 0; i < len; ++i) {
+    putchar(s[i]);
+  }
+  move_cursor(col, row);
 }
 
 void vga_init() {
@@ -128,8 +118,8 @@ void vga_init() {
   fg = VGA_COLOR_LIGHT_GREY;
   bg = VGA_COLOR_BLACK;
 
-  for (size_t y = 0; y < VGA_HEIGHT; y++) {
-    for (size_t x = 0; x < VGA_WIDTH; x++) {
+  for (size_t y = 0; y < VGA_HEIGHT; ++y) {
+    for (size_t x = 0; x < VGA_WIDTH; ++x) {
       buffer[buffer_i(x, y)] = EMPTY_CELL;
     }
   }

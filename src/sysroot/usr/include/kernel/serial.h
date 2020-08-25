@@ -9,3 +9,5 @@ enum serial_port {
 
 extern void serial_enable(enum serial_port p);
 extern void serial_set_baud(enum serial_port p, unsigned short divisor);
+extern void serial_transmit(enum serial_port p, char c);
+extern void serial_write(enum serial_port p, const char* s);
