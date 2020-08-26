@@ -6,6 +6,7 @@
 #include <kernel/serial.h>
 #include <sys/io.h>
 
+// useful: https://www.activexperts.com/serial-port-component/tutorials/uart/
 static uint8_t ENABLE_SET_DIVISOR = 0x80;
 // (disable divisor mode) set data length to 8 bits,
 // 1 stop bit, no parity bit, break control disabled
