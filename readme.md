@@ -1,9 +1,5 @@
 _up next: idt_
 
-* [setup](#setup)
-    * [cross toolchain](#cross-toolchain)
-* [doin stuff](#doin-stuff)
-
 # setup
 
 we're using an early 2015 mbp running macos 10.14.6.
@@ -112,9 +108,3 @@ mkdir grubbuild
 cd grubbuild
 ../grub-2.04/configure --prefix="$PREFIX" --target=$TARGET --disable-werror
 ```
-
-# doin stuff
-
-`make run`
-
-boot howdy in qemu
