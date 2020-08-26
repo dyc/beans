@@ -18,27 +18,27 @@ static uint8_t DEFAULT_FIFO_CONFIG = 0xC7;
 static uint8_t DEFAULT_MODEM_CONFIG = 0x03;
 static uint8_t TRANSMIT_FIFO_EMPTY = 0x20;
 
-static inline short int data_reg(enum serial_port p) {
+static inline short data_reg(enum serial_port p) {
   return p;
 }
 
-static inline short intenable_reg(enum serial_port p) {
+static inline short enable_reg(enum serial_port p) {
   return p + 1;
 }
 
-static inline short int fifocontrol_reg(enum serial_port p) {
+static inline short fifocontrol_reg(enum serial_port p) {
   return p + 2;
 }
 
-static inline short int linecontrol_reg(enum serial_port p) {
+static inline short linecontrol_reg(enum serial_port p) {
   return p + 3;
 }
 
-static inline short int modemcontrol_reg(enum serial_port p) {
+static inline short modemcontrol_reg(enum serial_port p) {
   return p + 4;
 }
 
-static inline short int linestatus_reg(enum serial_port p) {
+static inline short linestatus_reg(enum serial_port p) {
   return p + 5;
 }
 
