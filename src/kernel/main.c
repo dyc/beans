@@ -1,8 +1,10 @@
+#include <kernel/mem.h>
 #include <kernel/printf.h>
 #include <kernel/serial.h>
 #include <kernel/vga.h>
 
 void kmain(void) {
+  gdt_install();
   vga_init();
   serial_enable(SERIAL_PORT_COM1);
 

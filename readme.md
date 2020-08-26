@@ -1,4 +1,4 @@
-_up next: gdt_
+_up next: idt_
 
 * [setup](#setup)
     * [cross toolchain](#cross-toolchain)
