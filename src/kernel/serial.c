@@ -22,7 +22,7 @@ static inline short data_reg(enum serial_port p) {
   return p;
 }
 
-static inline short enable_reg(enum serial_port p) {
+static inline short intenable_reg(enum serial_port p) {
   return p + 1;
 }
 
