@@ -66,7 +66,7 @@ void serial_set_baud(enum serial_port p, unsigned short divisor) {
   outb(data_reg(p), (divisor >> 8) & 0xFF);
   outb(data_reg(p), divisor & 0xFF);
   // seems like folks usually write something like
-  // DEFAULT_LINE_CONFIG in lieu of prev here
+  // DEFAULT_LINE_CONFIG in lieu of prevline
   outb(linecontrol_reg(p), prevline);
 }
 
