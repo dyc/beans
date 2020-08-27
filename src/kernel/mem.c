@@ -80,7 +80,7 @@ static struct {
 static void set_gate(
   idt_entry_t* gate,
   uint32_t offset,
-  uint32_t selector,
+  uint16_t selector,
   bool present,
   uint8_t dpl,
   bool is_task,
