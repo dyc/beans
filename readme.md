@@ -15,7 +15,7 @@ make -j8
 sudo make install-strip
 ```
 
-next we tell `make` to use gcc-10.2:
+and use it:
 
 ```sh
 export CC=/usr/local/gcc-10.2.0/bin/gcc-10.2
@@ -24,7 +24,7 @@ export CPP=/usr/local/gcc-10.2.0/bin/cpp-10.2
 export LD=/usr/local/gcc-10.2.0/bin/gcc-10.2
 ```
 
-and set a home for our cross builds, so that they're isolated from system
+next, set a home for our cross builds, so that they're isolated from system
 tools, and what we're targeting:
 
 ```sh
