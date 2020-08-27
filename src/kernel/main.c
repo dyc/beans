@@ -5,6 +5,7 @@
 
 void kmain(void) {
   gdt_install();
+  idt_install();
   vga_init();
   serial_enable(SERIAL_PORT_COM1);
 
