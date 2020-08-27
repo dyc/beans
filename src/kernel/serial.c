@@ -18,40 +18,40 @@ static uint8_t DEFAULT_FIFO_CONFIG = 0xC7;
 static uint8_t DEFAULT_MODEM_CONFIG = 0x03;
 static uint8_t TRANSMIT_FIFO_EMPTY = 0x20;
 
-static inline short data_reg(enum serial_port p) {
+static inline short data_reg(serial_port_t p) {
   return p;
 }
 
-static inline short intenable_reg(enum serial_port p) {
+static inline short intenable_reg(serial_port_t p) {
   return p + 1;
 }
 
-static inline short fifocontrol_reg(enum serial_port p) {
+static inline short fifocontrol_reg(serial_port_t p) {
   return p + 2;
 }
 
-static inline short linecontrol_reg(enum serial_port p) {
+static inline short linecontrol_reg(serial_port_t p) {
   return p + 3;
 }
 
-static inline short modemcontrol_reg(enum serial_port p) {
+static inline short modemcontrol_reg(serial_port_t p) {
   return p + 4;
 }
 
-static inline short linestatus_reg(enum serial_port p) {
+static inline short linestatus_reg(serial_port_t p) {
   return p + 5;
 }
 
-bool transmit_empty(enum serial_port p) {
+bool transmit_empty(serial_port_t p) {
   return inb(linestatus_reg(p)) & TRANSMIT_FIFO_EMPTY;
 }
 
-void transmit(enum serial_port p, char c) {
+void transmit(serial_port_t p, char c) {
   while (!transmit_empty(p));
   outb(data_reg(p), c);
 }
 
-void serial_enable(enum serial_port p) {
+void serial_enable(serial_port_t p) {
   outb(intenable_reg(p), 0x00);
   // 115200 bps
   serial_set_baud(p, 0x01);
@@ -61,7 +61,7 @@ void serial_enable(enum serial_port p) {
   outb(intenable_reg(p), 0x01);
 }
 
-void serial_set_baud(enum serial_port p, unsigned short divisor) {
+void serial_set_baud(serial_port_t p, unsigned short divisor) {
   uint8_t prevline = inb(linecontrol_reg(p));
   outb(linecontrol_reg(p), ENABLE_SET_DIVISOR);
   outb(data_reg(p), (divisor >> 8) & 0xFF);
@@ -71,7 +71,7 @@ void serial_set_baud(enum serial_port p, unsigned short divisor) {
   outb(linecontrol_reg(p), prevline);
 }
 
-void serial_write(enum serial_port p, const char* s) {
+void serial_write(serial_port_t p, const char* s) {
   size_t len = strlen(s);
   for (size_t i = 0; i < len; ++i) {
     transmit(p, s[i]);
