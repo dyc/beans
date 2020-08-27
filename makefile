@@ -6,22 +6,24 @@ BUILD_DIR=build
 BIN_DIR=$(BUILD_DIR)/bin
 ISO_DIR=$(BUILD_DIR)/iso
 KERNEL_BUILD_DIR=$(BUILD_DIR)/kernel
+KERNELASM_BUILD_DIR=$(KERNEL_BUILD_DIR)/asm
 
 SRC_DIR=src
 BOOT_SRC_DIR=$(SRC_DIR)/boot
 KERNEL_SRC_DIR=$(SRC_DIR)/kernel
+KERNELASM_SRC_DIR=$(KERNEL_SRC_DIR)/asm
 SYSROOT_SRC_DIR=$(SRC_DIR)/sysroot
 
 #### kernel ####
 KCFLAGS=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
-CRTI_OBJ=$(KERNEL_BUILD_DIR)/crti.o
-CRTN_OBJ=$(KERNEL_BUILD_DIR)/crtn.o
+CRTI_OBJ=$(KERNELASM_BUILD_DIR)/crti.o
+CRTN_OBJ=$(KERNELASM_BUILD_DIR)/crtn.o
 CRTBEGIN_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtbegin.o)
 CRTEND_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtend.o)
 # c sources
 KERNEL_OBJS=$(patsubst %.c,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.c))
 # asm sources
-KERNEL_OBJS:=$(KERNEL_OBJS) $(patsubst %.S,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.S))
+KERNEL_OBJS:=$(KERNEL_OBJS) $(patsubst %.S,%.o,$(wildcard $(KERNELASM_SRC_DIR)/*.S))
 # source path -> build path
 KERNEL_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_OBJS))
 # link order matters here
@@ -35,8 +37,8 @@ $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
 	@mkdir -p $(KERNEL_BUILD_DIR)
 	${CC} -c $< -o $@ $(KCFLAGS)
 
-$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.S
-	@mkdir -p $(KERNEL_BUILD_DIR)
+$(KERNELASM_BUILD_DIR)/%.o: $(KERNELASM_SRC_DIR)/%.S
+	@mkdir -p $(KERNELASM_BUILD_DIR)
 	${AS} $< -o $@
 
 $(BIN_DIR)/howdy.bin: $(KERNEL_OBJS)

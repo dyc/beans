@@ -1,4 +1,4 @@
-#include <kernel/mem.h>
+#include <kernel/desc.h>
 #include <kernel/printf.h>
 #include <kernel/serial.h>
 #include <kernel/vga.h>

@@ -73,7 +73,7 @@ sudo make install-gcc
 sudo make install-target-libgcc
 ```
 
-we'll be building our boot images with grub:
+finally, we'll be building our boot images with grub:
 
 ```sh
 # grub needs xorriso and objconv

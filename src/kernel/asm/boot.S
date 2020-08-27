@@ -3,7 +3,7 @@
 
 # constants for multiboot header
 # https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Header-magic-fields
-.set ALIGN,    1<<0  ; boot modules must be (4kb) page-aligned
+.set ALIGN,    1<<0
 .set MEMINFO,  1<<1
 .set FLAGS,    ALIGN | MEMINFO
 .set MAGIC,    0x1BADB002
@@ -18,7 +18,7 @@
 .section .bss
 .align 16
 stack_bottom:
-.skip 16384  ; allocate 16kib
+.skip 16384
 stack_top:
 
 .section .text
@@ -29,7 +29,7 @@ _start:
       call _init
       call kmain
       call _fini
-      cli  ; disable interrupts
+      cli  # disable interrupts
   1:  hlt
       jmp 1b
 .size _start, . - _start
