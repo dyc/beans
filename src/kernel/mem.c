@@ -9,7 +9,6 @@ typedef struct {
   uint32_t base;
 } __attribute__((packed)) gdtr_t;
 
-// https://wiki.osdev.org/Global_Descriptor_Table
 typedef struct {
   uint16_t limit_low;
   uint16_t base_low;
