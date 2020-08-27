@@ -1,15 +1,7 @@
-_up next: idt_
-
-# setup
-
-we're using an early 2015 mbp running macos 10.14.6.
-
-## cross toolchain
-
-our system gcc version is 4.2.1. we update to [latest](https://wiki.osdev.org/Building_GCC) (10.2.0):
+we're running macos 10.14.6, with gcc 4.2.1. before setting up our cross
+toolchain, let's grab latest gcc (10.2.0):
 
 ```sh
-# paths relative to the directory containing gcc source
 mkdir gccbuild
 cd gccbuild
 ../gcc-10.2.0/configure \
@@ -32,25 +24,18 @@ export CPP=/usr/local/gcc-10.2.0/bin/cpp-10.2
 export LD=/usr/local/gcc-10.2.0/bin/gcc-10.2
 ```
 
-and set a home for our cross builds:
+and set a home for our cross builds, so that they're isolated from system
+tools, and what we're targeting:
 
 ```sh
-# isolate cross environment from system tools
 export PREFIX=/usr/local/cross
 export PATH="$PREFIX/bin:$PATH"
-```
-
-as well as the cross target we're building for:
-
-```sh
 export TARGET=i686-elf
 ```
 
-now we build `binutils` for our cross compiler.
-do this before building gcc, which i'm guessing
-links target libraries (i ran into issues
-when i tried using a `gcc` built without cross
-utils):
+now we build binutils for our cross compiler. do this before building gcc,
+which presumably links target libraries--we ran into issues when we tried using
+gcc built without cross binutils:
 
 ```sh
 mkdir crossbin
@@ -88,10 +73,10 @@ sudo make install-gcc
 sudo make install-target-libgcc
 ```
 
-if you'd like to build your boot images with grub:
+we'll be building our boot images with grub:
 
 ```sh
-# we'll need xorriso and objconv
+# grub needs xorriso and objconv
 brew install xorriso
 
 mkdir objconvbuild
@@ -101,8 +86,8 @@ cd ..
 
 cd grub-2.04
 ./autogen.sh
-# i had to make this 2-line patch to get 2.04 to build:
-# # https://www.mail-archive.com/grub-devel@gnu.org/msg29007.html
+# we had to make this 2-line patch to get 2.04 to build:
+# https://www.mail-archive.com/grub-devel@gnu.org/msg29007.html
 cd ..
 mkdir grubbuild
 cd grubbuild
