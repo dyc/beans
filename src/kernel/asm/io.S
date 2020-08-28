@@ -16,3 +16,11 @@ inb:
     movl 4(%esp), %edx
     inb %dx, %al
     ret
+
+.global iowait
+.type iowait, @function
+iowait:
+    jmp 1f
+    1: jmp 2f
+    2:
+    ret

@@ -9,12 +9,13 @@
     jmp irq_handler_common
 .endm
 
-.extern irq_handler
-.type irq_handler, @function
+.extern c_irq_handler
+.type c_irq_handler, @function
 
 irq_handler_common:
   pusha
-  call irq_handler
+  cld
+  call c_irq_handler
   popa
   add $8, %esp  # error code and IRQ id
   iret

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef enum {
-  PIC_1 = 0x20,
-  PIC_2 = 0xA0,
+  PIC1 = 0x20,
+  PIC2 = 0xA0,
 } pic_port_t;
 
 typedef struct {
@@ -14,7 +15,9 @@ typedef struct {
   unsigned int eip, cs, eflags;
 } __attribute__((packed)) irq_state_t;
 
+typedef int (*irq_handler_t) (irq_state_t* s);
+
 extern void gdt_install();
 extern void idt_install();
 extern void irq_install();
-extern void irq_handler(irq_state_t* s);
+extern void irq_install_handler(size_t irq, irq_handler_t* handler);
