@@ -24,16 +24,13 @@ void idt_set_gate(
   size_t gate,
   uint32_t offset,
   uint16_t selector,
-  bool present,
-  uint8_t dpl,
-  bool is_task,
-  uint8_t type
+  uint8_t flags
 ) {
   idt.entries[gate].offset_low = offset & 0xFFFF;
+  idt.entries[gate].offset_high = (offset >> 16) & 0xFFFF;
   idt.entries[gate].selector = selector;
   idt.entries[gate].zero = 0;
-  idt.entries[gate].flags = (present << 7) | (dpl << 5) | (is_task << 4) | (type & 0x0F);
-  idt.entries[gate].offset_high = (offset >> 16) & 0xFFFF;
+  idt.entries[gate].flags = flags | 0x60;
 }
 
 extern void load_idt(uintptr_t);
@@ -44,7 +41,7 @@ void idt_install() {
 
   size_t n = sizeof(idt.entries) / sizeof(idt_entry_t);
   for (size_t i = 0; i < n; ++i) {
-    idt_set_gate(i, 0, 0, 0, 0, 0, 0);
+    idt_set_gate(i, 0, 0, 0);
   }
 
   load_idt((uintptr_t) &idt.idtr);

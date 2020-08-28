@@ -24,10 +24,7 @@ extern void idt_set_gate(
   size_t gate,
   uint32_t offset,
   uint16_t selector,
-  bool present,
-  uint8_t dpl,
-  bool is_task,
-  uint8_t type
+  uint8_t flags
 );
 extern void pic_ack(size_t irq);
 extern void irq_install();
