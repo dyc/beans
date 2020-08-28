@@ -46,7 +46,7 @@ static __attribute__((used)) void (*irqs[16]) (void) = {
   irq_handler_start46,
   irq_handler_start47,
 };
-static int (*irq_handlers[16])(irq_state_t* s);
+static __attribute__((used)) int (*irq_handlers[16])(irq_state_t* s) = {};
 
 static inline void disable_int() {
   asm volatile("cli");

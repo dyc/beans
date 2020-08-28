@@ -1,24 +1,13 @@
-.macro irq_handler_start id
-  .global irq_handler_start\id
-  .type irq_handler_start\id, @function
+.macro irq_handler_start irq
+  .global irq_handler_start\irq
+  .type irq_handler_start\irq, @function
 
-  irq_handler_start\id:
+  irq_handler_start\irq:
     cli
     push $0x00
-    push $\id
+    push $\irq
     jmp irq_handler_common
 .endm
-
-.extern c_irq_handler
-.type c_irq_handler, @function
-
-irq_handler_common:
-  pusha
-  cld
-  call c_irq_handler
-  popa
-  add $8, %esp  # error code and IRQ id
-  iret
 
 # remap our IRQs to start at 0x20
 irq_handler_start 32
@@ -37,3 +26,36 @@ irq_handler_start 44
 irq_handler_start 45
 irq_handler_start 46
 irq_handler_start 47
+
+.extern c_irq_handler
+.type c_irq_handler, @function
+
+irq_handler_common:
+  pusha
+  # save segment registers
+  # and load kernel data segment
+  # it seems like ss is saved by control unit
+  # https://www.oreilly.com/library/view/understanding-the-linux/0596005652/ch04s02.html#understandlk-CHP-4-SECT-2.4
+  push %ds
+  push %es
+  push %fs
+  push %gs
+  mov 0x10, %ax
+  mov %ax, %ds
+  mov %ax, %es
+  mov %ax, %fs
+  mov %ax, %gs
+
+  cld
+  push %esp
+  call c_irq_handler
+  add $4, %esp
+
+  pop %gs
+  pop %fs
+  pop %es
+  pop %ds
+  popa
+
+  add $8, %esp  # error code and IRQ num
+  iret

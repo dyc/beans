@@ -10,10 +10,10 @@ typedef enum {
 } pic_port_t;
 
 typedef struct {
-  // need to check the order of these
-  uint16_t di, si, bp, sp, bx, dx, cx, ax;
-  unsigned int error_code, interrupt;
-  unsigned int eip, cs, eflags;
+  unsigned int gs, fs, es, ds;
+  unsigned int edi, esi, ebp, esp, ebx, edx, ecx, eax;
+  unsigned int interrupt, error;
+  unsigned int eip, cs, eflags, uresp, ss;
 } __attribute__((packed)) irq_state_t;
 
 typedef int (*irq_handler_t) (irq_state_t* s);
