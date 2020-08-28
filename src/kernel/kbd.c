@@ -10,6 +10,7 @@ static const uint8_t KEYBOARD_PENDING = 0x64;
 static char buf[] = {'i', 'n', 't', '\n', 0};
 
 int keyboard_handler(irq_state_t* s) {
+  serial_write(SERIAL_PORT_COM1, buf);
   if (inb(KEYBOARD_PENDING) & 0x01) {
     buf[0] = inb(KEYBOARD_PORT);
     // for now, write to serial out

@@ -10,6 +10,10 @@ void kmain(void) {
   irq_install();
   serial_enable(SERIAL_PORT_COM1);
   keyboard_install();
+  asm volatile("sti");
+  for(;;) {
+    asm("hlt");
+  }
 
   // vga_init();
   // serial_enable(SERIAL_PORT_COM1);

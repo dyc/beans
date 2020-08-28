@@ -98,13 +98,12 @@ static void pic_remap() {
 
 void c_irq_handler(irq_state_t* s) {
   disable_int();
-  // if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (PIC2_OFFSET + 8)) {
-  //   if (!irq_handlers[s->interrupt - PIC1_OFFSET](s)) {
-  //     // our handler failed
-  //     pic_ack(s->interrupt);
-  //   }
-  // }
-  irq_handlers[1](s);
+  if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (PIC2_OFFSET + 8)) {
+    if (s->interrupt != PIC1_OFFSET + 1 || !irq_handlers[s->interrupt - PIC1_OFFSET](s)) {
+      // our handler failed
+      pic_ack(s->interrupt);
+    }
+  }
   enable_int();
 }
 
@@ -126,11 +125,13 @@ void irq_install() {
       0x8E                // flags
     );
   }
-  enable_int();
 }
 
 void irq_install_handler(size_t irq, irq_handler_t handler) {
   disable_int();
   irq_handlers[irq] = handler;
-  enable_int();
+  // currently, after enabling ints here, i think we immediately get
+  // timer interrupts (irq0) which is no bueno since we only have
+  // the keyboard handler installed...
+  // enable_int();
 }
