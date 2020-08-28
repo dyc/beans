@@ -20,19 +20,20 @@ irq_handler_common:
   add $8, %esp  # error code and IRQ id
   iret
 
-irq_handler_start 0
-irq_handler_start 1
-irq_handler_start 2
-irq_handler_start 3
-irq_handler_start 4
-irq_handler_start 5
-irq_handler_start 6
-irq_handler_start 7
-irq_handler_start 8
-irq_handler_start 9
-irq_handler_start 10
-irq_handler_start 11
-irq_handler_start 12
-irq_handler_start 13
-irq_handler_start 14
-irq_handler_start 15
+# remap our IRQs to start at 0x20
+irq_handler_start 32
+irq_handler_start 33
+irq_handler_start 34
+irq_handler_start 35
+irq_handler_start 36
+irq_handler_start 37
+irq_handler_start 38
+irq_handler_start 39
+irq_handler_start 40
+irq_handler_start 41
+irq_handler_start 42
+irq_handler_start 43
+irq_handler_start 44
+irq_handler_start 45
+irq_handler_start 46
+irq_handler_start 47

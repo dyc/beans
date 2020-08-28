@@ -11,40 +11,40 @@ static const uint8_t PIC1_OFFSET = 0x20;
 static const uint8_t PIC2_OFFSET = 0x28;
 static const uint8_t ICW4_8086 = 0x01;
 
-extern void irq_handler_start0();
-extern void irq_handler_start1();
-extern void irq_handler_start2();
-extern void irq_handler_start3();
-extern void irq_handler_start4();
-extern void irq_handler_start5();
-extern void irq_handler_start6();
-extern void irq_handler_start7();
-extern void irq_handler_start8();
-extern void irq_handler_start9();
-extern void irq_handler_start10();
-extern void irq_handler_start11();
-extern void irq_handler_start12();
-extern void irq_handler_start13();
-extern void irq_handler_start14();
-extern void irq_handler_start15();
+extern void irq_handler_start32();
+extern void irq_handler_start33();
+extern void irq_handler_start34();
+extern void irq_handler_start35();
+extern void irq_handler_start36();
+extern void irq_handler_start37();
+extern void irq_handler_start38();
+extern void irq_handler_start39();
+extern void irq_handler_start40();
+extern void irq_handler_start41();
+extern void irq_handler_start42();
+extern void irq_handler_start43();
+extern void irq_handler_start44();
+extern void irq_handler_start45();
+extern void irq_handler_start46();
+extern void irq_handler_start47();
 
 static __attribute__((used)) void (*irqs[16]) (void) = {
-  irq_handler_start0,
-  irq_handler_start1,
-  irq_handler_start2,
-  irq_handler_start3,
-  irq_handler_start4,
-  irq_handler_start5,
-  irq_handler_start6,
-  irq_handler_start7,
-  irq_handler_start8,
-  irq_handler_start9,
-  irq_handler_start10,
-  irq_handler_start11,
-  irq_handler_start12,
-  irq_handler_start13,
-  irq_handler_start14,
-  irq_handler_start15,
+  irq_handler_start32,
+  irq_handler_start33,
+  irq_handler_start34,
+  irq_handler_start35,
+  irq_handler_start36,
+  irq_handler_start37,
+  irq_handler_start38,
+  irq_handler_start39,
+  irq_handler_start40,
+  irq_handler_start41,
+  irq_handler_start42,
+  irq_handler_start43,
+  irq_handler_start44,
+  irq_handler_start45,
+  irq_handler_start46,
+  irq_handler_start47,
 };
 static int (*irq_handlers[16])(irq_state_t* s);
 
@@ -114,7 +114,7 @@ void pic_ack(size_t irq) {
 
 void irq_install() {
   pic_remap();
-  size_t n = sizeof(irqs) / sizeof(irqs[0]);
+  size_t n = sizeof(irqs) / sizeof(void (*)(void));
   for (size_t i = 0; i < n; ++i) {
     // flags should be
     // static const uint8_t INT_FLAGS =0x8E;
@@ -122,8 +122,7 @@ void irq_install() {
     idt_set_gate(
       PIC1_OFFSET + i, // gate
       (uint32_t) &irqs[i],         // offset
-      // check this
-      0x80,            // selector
+      0x08,            // selector (kernel code segment)
       1,               // present
       0,               // dpl
       0,               // segment

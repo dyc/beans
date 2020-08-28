@@ -14,6 +14,9 @@ int keyboard_handler(irq_state_t* s) {
     buf[0] = inb(KEYBOARD_PORT);
     // for now, write to serial out
     serial_write(SERIAL_PORT_COM1, buf);
+  } else {
+    buf[0] = '0';
+    serial_write(SERIAL_PORT_COM1, buf);
   }
   pic_ack(s->interrupt);
   return 1;

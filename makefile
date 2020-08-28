@@ -58,6 +58,9 @@ $(BIN_DIR)/howdy.iso: check
 run: $(BIN_DIR)/howdy.iso
 	qemu-system-i386 -serial stdio -cdrom $(BIN_DIR)/howdy.iso
 
+debug: $(BIN_DIR)/howdy.iso
+	qemu-system-i386 -s -S -serial stdio -cdrom $(BIN_DIR)/howdy.iso
+
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
