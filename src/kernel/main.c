@@ -1,18 +1,19 @@
 #include <kernel/desc.h>
 // #include <kernel/printf.h>
-// #include <kernel/serial.h>
+#include <kernel/serial.h>
 // #include <kernel/vga.h>
-// #include <sys/device.h>
+#include <sys/device.h>
 
 void kmain(void) {
   gdt_install();
-  // idt_install();
-  // irq_install();
+  idt_install();
+  irq_install();
+  serial_enable(SERIAL_PORT_COM1);
+  keyboard_install();
 
   // vga_init();
   // serial_enable(SERIAL_PORT_COM1);
 
-  // keyboard_install();
 
   // char buf[8];
   // for (size_t i = 0; i < VGA_HEIGHT; ++i) {

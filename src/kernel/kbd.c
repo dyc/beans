@@ -7,7 +7,7 @@
 const uint8_t KEYBOARD_IRQ = 0x01;
 static const uint8_t KEYBOARD_PORT = 0x60;
 static const uint8_t KEYBOARD_PENDING = 0x64;
-static char buf[1];
+static char buf[] = {'i', 'n', 't', 0};
 
 int keyboard_handler(irq_state_t* s) {
   if (inb(KEYBOARD_PENDING) & 0x01) {
@@ -15,7 +15,6 @@ int keyboard_handler(irq_state_t* s) {
     // for now, write to serial out
     serial_write(SERIAL_PORT_COM1, buf);
   } else {
-    buf[0] = '0';
     serial_write(SERIAL_PORT_COM1, buf);
   }
   pic_ack(s->interrupt);

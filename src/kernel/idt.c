@@ -39,14 +39,13 @@ void idt_set_gate(
 extern void load_idt(uintptr_t);
 
 void idt_install() {
-  idtr_t* idtr_p = &idt.idtr;
-  idtr_p->limit = sizeof(idt.entries) - 1;
-  idtr_p->base = (uint32_t) &idt.entries[0];
+  idt.idtr.limit = sizeof(idt.entries) - 1;
+  idt.idtr.base = (uint32_t) &idt.entries[0];
 
   size_t n = sizeof(idt.entries) / sizeof(idt_entry_t);
   for (size_t i = 0; i < n; ++i) {
     idt_set_gate(i, 0, 0, 0, 0, 0, 0);
   }
 
-  load_idt((uintptr_t) idtr_p);
+  load_idt((uintptr_t) &idt.idtr);
 }
