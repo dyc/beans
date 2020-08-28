@@ -29,12 +29,11 @@ void idt_set_gate(
   bool is_task,
   uint8_t type
 ) {
-  idt_entry_t* gate_p = &idt.entries[gate];
-  gate_p->offset_low = offset & 0xFFFF;
-  gate_p->selector = selector;
-  gate_p->zero = 0;
-  gate_p->flags = (present << 7) | (dpl << 5) | (is_task << 4) | (type & 0x0F);
-  gate_p->offset_high = (offset >> 16) & 0xFFFF;
+  idt.entries[gate].offset_low = offset & 0xFFFF;
+  idt.entries[gate].selector = selector;
+  idt.entries[gate].zero = 0;
+  idt.entries[gate].flags = (present << 7) | (dpl << 5) | (is_task << 4) | (type & 0x0F);
+  idt.entries[gate].offset_high = (offset >> 16) & 0xFFFF;
 }
 
 extern void load_idt(uintptr_t);

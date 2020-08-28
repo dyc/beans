@@ -1,7 +1,9 @@
+.section .text
+.align 4
 .global load_gdt
 .type load_gdt, @function
 load_gdt:
-    movl 4(%esp), %eax
+    mov 4(%esp), %eax
     lgdt (%eax)
 
     # load kernel data segment
@@ -21,5 +23,5 @@ load_gdt:
     mov %ax, %ss
 
     ljmp $0x08, $.flush_cs
-  .flush_cs:
-      ret
+.flush_cs:
+    ret

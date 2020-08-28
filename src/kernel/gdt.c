@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct {
@@ -21,19 +22,19 @@ static struct {
 } gdt __attribute__((used));
 
 static void set_segment(
-  gdt_entry_t* segment,
-  uint32_t base,
-  uint32_t limit,
+  size_t segment,
+  uint64_t base,
+  uint64_t limit,
   uint8_t access,
   uint8_t flags
 ) {
-  segment->base_low = base & 0xFFFF;
-  segment->base_mid = (base >> 16) & 0xFF;
-  segment->base_high = (base >> 24) & 0xFF;
-  segment->limit_low = limit & 0xFFFF;
-  segment->limit_high = (limit >> 16) & 0x0F;
-  segment->access = access;
-  segment->flags = flags & 0x0F;
+  gdt.entries[segment].base_low = base & 0xFFFF;
+  gdt.entries[segment].base_mid = (base >> 16) & 0xFF;
+  gdt.entries[segment].base_high = (base >> 24) & 0xFF;
+  gdt.entries[segment].limit_low = limit & 0xFFFF;
+  gdt.entries[segment].limit_high = (limit >> 16) & 0x0F;
+  gdt.entries[segment].access = access;
+  gdt.entries[segment].flags = flags & 0x0F;
 }
 
 extern void load_gdt(uintptr_t);
@@ -41,14 +42,14 @@ extern void load_gdt(uintptr_t);
 void gdt_install() {
   gdtr_t* gdtr_p = &gdt.gdtr;
   gdtr_p->limit = sizeof(gdt.entries) - 1;
-  gdtr_p->base = (uint32_t) &gdt.entries[0];
+  gdtr_p->base = (uintptr_t) &gdt.entries[0];
 
   // null segment
-  set_segment(&gdt.entries[0], 0, 0, 0, 0);
-  // code segment
-  set_segment(&gdt.entries[1], 0, 0xFFFFFFFF, 0x9A, 0x0C);
-  // data segment
-  set_segment(&gdt.entries[2], 0, 0xFFFFFFFF, 0x92, 0x0C);
+  set_segment(0, 0, 0, 0, 0);
+  // kcode segment
+  set_segment(1, 0, 0xFFFFFFFF, 0x9A, 0x0C);
+  // kdata segment
+  set_segment(2, 0, 0xFFFFFFFF, 0x92, 0x0C);
 
   load_gdt((uintptr_t) gdtr_p);
 }
