@@ -7,7 +7,7 @@
 const uint8_t KEYBOARD_IRQ = 0x01;
 static const uint8_t KEYBOARD_PORT = 0x60;
 static const uint8_t KEYBOARD_PENDING = 0x64;
-static char buf[] = {'i', 'n', 't', 0};
+static char buf[] = {'i', 'n', 't', '\n', 0};
 
 int keyboard_handler(irq_state_t* s) {
   if (inb(KEYBOARD_PENDING) & 0x01) {

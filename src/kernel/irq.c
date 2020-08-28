@@ -91,17 +91,20 @@ static void pic_remap() {
   iowait();
 
   outb(pic_data(PIC1), old_p1);
+  iowait();
   outb(pic_data(PIC2), old_p2);
+  iowait();
 }
 
 void c_irq_handler(irq_state_t* s) {
   disable_int();
-  if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (PIC2_OFFSET + 8)) {
-    if (!irq_handlers[s->interrupt - PIC1_OFFSET](s)) {
-      // our handler failed
-      pic_ack(s->interrupt);
-    }
-  }
+  // if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (PIC2_OFFSET + 8)) {
+  //   if (!irq_handlers[s->interrupt - PIC1_OFFSET](s)) {
+  //     // our handler failed
+  //     pic_ack(s->interrupt);
+  //   }
+  // }
+  irq_handlers[1](s);
   enable_int();
 }
 
@@ -129,6 +132,7 @@ void irq_install() {
       0xF                  // type
     );
   }
+  enable_int();
 }
 
 void irq_install_handler(size_t irq, irq_handler_t handler) {
