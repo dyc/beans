@@ -120,13 +120,13 @@ void irq_install() {
     // static const uint8_t INT_FLAGS =0x8E;
     // see https://wiki.osdev.org/Interrupt_Descriptor_Table
     idt_set_gate(
-      PIC1_OFFSET + i, // gate
-      (uint32_t) &irqs[i],         // offset
-      0x08,            // selector (kernel code segment)
-      1,               // present
-      0,               // dpl
-      0,               // segment
-      0xF              // type
+      PIC1_OFFSET + i,     // gate
+      (uint32_t) &irqs[i], // offset
+      0x08,                // selector (kernel code segment)
+      1,                   // present
+      0,                   // dpl
+      0,                   // segment
+      0xF                  // type
     );
   }
 }
