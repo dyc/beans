@@ -15,7 +15,7 @@ load_gdt:
     # https://stackoverflow.com/questions/19074666/8086-why-cant-we-move-an-immediate-data-into-segment-register
     # https://stackoverflow.com/questions/25702277/why-use-temporary-register-to-pass-a-value-to-a-segment-register
     # to be safe, we avoid doing this :-p
-    mov 0x10, %ax
+    mov $0x10, %ax
     mov %ax, %ds
     mov %ax, %es
     mov %ax, %fs

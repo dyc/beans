@@ -40,10 +40,8 @@ static void set_segment(
 extern void load_gdt(uintptr_t);
 
 void gdt_install() {
-  gdtr_t* gdtr_p = &gdt.gdtr;
-  gdtr_p->limit = sizeof(gdt.entries) - 1;
-  gdtr_p->base = (uintptr_t) &gdt.entries[0];
-
+  gdt.gdtr.limit = sizeof(gdt.entries) - 1;
+  gdt.gdtr.base = (uintptr_t) &gdt.entries[0];
   // null segment
   set_segment(0, 0, 0, 0, 0);
   // kcode segment
@@ -51,5 +49,5 @@ void gdt_install() {
   // kdata segment
   set_segment(2, 0, 0xFFFFFFFF, 0x92, 0x0C);
 
-  load_gdt((uintptr_t) gdtr_p);
+  load_gdt((uintptr_t) &gdt.gdtr);
 }
