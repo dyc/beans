@@ -120,10 +120,10 @@ void irq_install() {
   size_t n = sizeof(irqs) / sizeof(void (*)(void));
   for (size_t i = 0; i < n; ++i) {
     idt_set_gate(
-      PIC1_OFFSET + i,     // gate
-      (uint32_t) &irqs[i], // offset
-      0x08,                // selector (kcode segment)
-      0x8E                 // flags
+      PIC1_OFFSET + i,    // gate
+      (uint32_t) irqs[i], // offset
+      0x08,               // selector (kcode segment)
+      0x8E                // flags
     );
   }
   enable_int();
