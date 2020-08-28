@@ -26,10 +26,13 @@ stack_top:
 .type _start, @function
 _start:
       mov $stack_top, %esp
+
+      cli
       call _init
       call kmain
       call _fini
-      cli  # disable interrupts
+      cli
+
   1:  hlt
       jmp 1b
 .size _start, . - _start
