@@ -18,7 +18,7 @@ typedef struct {
 static struct {
   gdtr_t gdtr;
   gdt_entry_t entries[3];
-} gdt;
+} gdt __attribute__((used));
 
 static void set_segment(
   gdt_entry_t* segment,

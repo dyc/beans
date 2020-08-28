@@ -64,13 +64,6 @@ static inline uint8_t pic_data(pic_port_t p) {
   return p + 1;
 }
 
-static void pic_ack(size_t irq) {
-  outb(pic_command(PIC1), PIC_ACK);
-  if (irq >= 8) {
-    outb(pic_command(PIC2), PIC_ACK);
-  }
-}
-
 static void pic_remap() {
   uint8_t old_p1 = inb(pic_data(PIC1));
   uint8_t old_p2 = inb(pic_data(PIC2));
@@ -104,12 +97,43 @@ static void pic_remap() {
 void c_irq_handler(irq_state_t* s) {
   disable_int();
   if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (PIC2_OFFSET + 8)) {
-    irq_handlers[s->interrupt - PIC1_OFFSET](s);
-    pic_ack(s->interrupt);
+    if (!irq_handlers[s->interrupt - PIC1_OFFSET](s)) {
+      // our handler failed
+      pic_ack(s->interrupt);
+    }
   }
   enable_int();
 }
 
+void pic_ack(size_t irq) {
+  outb(pic_command(PIC1), PIC_ACK);
+  if (irq >= 8) {
+    outb(pic_command(PIC2), PIC_ACK);
+  }
+}
+
 void irq_install() {
   pic_remap();
+  size_t n = sizeof(irqs) / sizeof(irqs[0]);
+  for (size_t i = 0; i < n; ++i) {
+    // flags should be
+    // static const uint8_t INT_FLAGS =0x8E;
+    // see https://wiki.osdev.org/Interrupt_Descriptor_Table
+    idt_set_gate(
+      PIC1_OFFSET + i, // gate
+      (uint32_t) &irqs[i],         // offset
+      // check this
+      0x80,            // selector
+      1,               // present
+      0,               // dpl
+      0,               // segment
+      0xF              // type
+    );
+  }
+}
+
+void irq_install_handler(size_t irq, irq_handler_t handler) {
+  disable_int();
+  irq_handlers[irq] = handler;
+  enable_int();
 }

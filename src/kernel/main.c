@@ -2,6 +2,7 @@
 #include <kernel/printf.h>
 #include <kernel/serial.h>
 #include <kernel/vga.h>
+#include <sys/device.h>
 
 void kmain(void) {
   gdt_install();
@@ -10,6 +11,8 @@ void kmain(void) {
 
   vga_init();
   serial_enable(SERIAL_PORT_COM1);
+
+  keyboard_install();
 
   char buf[8];
   for (size_t i = 0; i < VGA_HEIGHT; ++i) {

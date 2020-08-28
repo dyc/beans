@@ -18,10 +18,10 @@ typedef struct {
 static struct {
   idtr_t idtr;
   idt_entry_t entries[256];
-} idt;
+} idt __attribute__((used));
 
-static void set_gate(
-  idt_entry_t* gate,
+void idt_set_gate(
+  size_t gate,
   uint32_t offset,
   uint16_t selector,
   bool present,
@@ -29,11 +29,12 @@ static void set_gate(
   bool is_task,
   uint8_t type
 ) {
-  gate->offset_low = offset & 0xFFFF;
-  gate->selector = selector;
-  gate->zero = 0;
-  gate->flags = (present << 7) | (dpl << 5) | (is_task << 4) | (type & 0xFF);
-  gate->offset_high = (offset >> 16) & 0xFFFF;
+  idt_entry_t* gate_p = &idt.entries[gate];
+  gate_p->offset_low = offset & 0xFFFF;
+  gate_p->selector = selector;
+  gate_p->zero = 0;
+  gate_p->flags = (present << 7) | (dpl << 5) | (is_task << 4) | (type & 0x0F);
+  gate_p->offset_high = (offset >> 16) & 0xFFFF;
 }
 
 extern void load_idt(uintptr_t);
@@ -45,7 +46,7 @@ void idt_install() {
 
   size_t n = sizeof(idt.entries) / sizeof(idt_entry_t);
   for (size_t i = 0; i < n; ++i) {
-    set_gate(&idt.entries[i], 0, 0, 0, 0, 0, 0);
+    idt_set_gate(i, 0, 0, 0, 0, 0, 0);
   }
 
   load_idt((uintptr_t) idtr_p);
