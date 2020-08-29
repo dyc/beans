@@ -3,6 +3,7 @@
 
 #include <kernel/desc.h>
 #include <sys/io.h>
+#include <kernel/serial.h>
 
 static const uint8_t PIC_ACK = 0x20;
 static const uint8_t ICW1_ICW4 = 0x01;
@@ -101,7 +102,7 @@ void c_irq_handler(irq_state_t* s) {
   if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (PIC2_OFFSET + 8)) {
     if (s->interrupt != PIC1_OFFSET + 1 || !irq_handlers[s->interrupt - PIC1_OFFSET](s)) {
       // our handler failed
-      pic_ack(s->interrupt);
+      pic_ack(s->interrupt - PIC1_OFFSET);
     }
   }
   enable_int();
@@ -130,8 +131,5 @@ void irq_install() {
 void irq_install_handler(size_t irq, irq_handler_t handler) {
   disable_int();
   irq_handlers[irq] = handler;
-  // currently, after enabling ints here, i think we immediately get
-  // timer interrupts (irq0) which is no bueno since we only have
-  // the keyboard handler installed...
-  // enable_int();
+  enable_int();
 }

@@ -40,7 +40,7 @@ irq_handler_common:
   push %es
   push %fs
   push %gs
-  mov 0x10, %ax
+  mov $0x10, %ax
   mov %ax, %ds
   mov %ax, %es
   mov %ax, %fs
