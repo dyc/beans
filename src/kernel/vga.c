@@ -28,7 +28,7 @@ static enum vga_color fg;
 static enum vga_color bg;
 
 static inline uint16_t vga_cell(uint8_t uc, enum vga_color fg, enum vga_color bg) {
-  return (uint16_t) uc | (uint16_t) ((fg | bg << 4) << 8);
+  return (uint16_t) uc | (uint16_t) ((fg | (bg << 4)) << 8);
 }
 
 static inline size_t buffer_i(size_t x, size_t y) {

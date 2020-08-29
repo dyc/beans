@@ -14,7 +14,7 @@ static int keyboard_handler(irq_state_t* s) {
   (void)(s);
   if (inb(KEYBOARD_PENDING) & 0x01) {
     KEYBOARD_BUFFER[KEYBOARD_CURSOR++] = inb(KEYBOARD_PORT);
-    if (KEYBOARD_CURSOR > sizeof(KEYBOARD_BUFFER)) {
+    if (KEYBOARD_CURSOR >= sizeof(KEYBOARD_BUFFER)) {
       KEYBOARD_CURSOR = 0;
     }
   }
