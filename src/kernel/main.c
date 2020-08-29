@@ -35,7 +35,6 @@ void kmain(void) {
 
   size_t kbdc = 0;
   char kbdbuf[256];
-
   for(;;) {
     if (kbdc == KEYBOARD_CURSOR) {
       asm("hlt");

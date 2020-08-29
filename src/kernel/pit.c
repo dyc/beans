@@ -48,6 +48,5 @@ void pit_set_freq_hz(size_t hz) {
 }
 
 void pit_install() {
-  pit_set_freq_hz(18);
   irq_install_handler(PIT_IRQ, pit_handler);
 }
