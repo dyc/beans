@@ -41,7 +41,7 @@ LIB_OBJS=$(patsubst %.c,%.o,$(wildcard $(LIB_SRC_DIR)/*.c))
 LIB_OBJS:=$(patsubst $(LIB_SRC_DIR)/%,$(LIB_BUILD_DIR)/%,$(LIB_OBJS))
 LIB_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/sys/*.h $(SYSROOT_SRC_DIR)/usr/include/sys/*/*.h)
 
-all: $(BIN_DIR)/howdy.iso
+all: $(BIN_DIR)/beans.iso
 
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
 	@mkdir -p $(KERNEL_BUILD_DIR)
@@ -55,25 +55,25 @@ $(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c $(LIB_HEADERS)
 	@mkdir -p $(LIB_BUILD_DIR)
 	${CC} -c $< -o $@ $(KCFLAGS)
 
-$(BIN_DIR)/howdy.bin: $(KERNEL_OBJS) $(LIB_OBJS)
+$(BIN_DIR)/beans.bin: $(KERNEL_OBJS) $(LIB_OBJS)
 	@mkdir -p $(BIN_DIR)
 	${CC} -T $(KERNEL_SRC_DIR)/linker.ld -o $@ $(KCFLAGS) $^ -lgcc
 
-check: $(BIN_DIR)/howdy.bin
-	grub-file --is-x86-multiboot $(BIN_DIR)/howdy.bin
+check: $(BIN_DIR)/beans.bin
+	grub-file --is-x86-multiboot $(BIN_DIR)/beans.bin
 
-$(BIN_DIR)/howdy.iso: check
+$(BIN_DIR)/beans.iso: check
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
-	cp $(BIN_DIR)/howdy.bin $(ISO_DIR)/boot/howdy.bin
+	cp $(BIN_DIR)/beans.bin $(ISO_DIR)/boot/beans.bin
 	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
-	grub-mkrescue -o $(BIN_DIR)/howdy.iso $(ISO_DIR)
+	grub-mkrescue -o $(BIN_DIR)/beans.iso $(ISO_DIR)
 
-run: $(BIN_DIR)/howdy.iso
-	qemu-system-i386 -serial stdio -cdrom $(BIN_DIR)/howdy.iso
+run: $(BIN_DIR)/beans.iso
+	qemu-system-i386 -serial stdio -cdrom $(BIN_DIR)/beans.iso
 
-debug: $(BIN_DIR)/howdy.iso
-	qemu-system-i386 -s -S -serial stdio -cdrom $(BIN_DIR)/howdy.iso
+debug: $(BIN_DIR)/beans.iso
+	qemu-system-i386 -s -S -serial stdio -cdrom $(BIN_DIR)/beans.iso
 
 .PHONY: clean
 clean:
