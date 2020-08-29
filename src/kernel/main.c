@@ -5,11 +5,11 @@
 #include <sys/device.h>
 #include <sys/kbd.h>
 
-static char heartbeat_buf[20];
+static char heartbeat_buf[28];
 void timer_heartbeat(unsigned long t) {
   // heartbeat every 10 seconds
   if (t % 1000 == 0) {
-    sprintf(heartbeat_buf, "hb %d\n", t / 1000);
+    sprintf(heartbeat_buf, "%ds since boot\n", t / 100);
     serial_write(SERIAL_PORT_COM1, heartbeat_buf);
   }
 }
