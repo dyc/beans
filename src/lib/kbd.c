@@ -27,7 +27,7 @@ static unsigned char KMAP_1[128] = {
 
 static bool shift_pressed = false;
 
-char kbd_scancode(uint8_t sc) {
+char scancode(uint8_t sc) {
   if (sc & KEY_RELEASE_MASK) {
     sc ^= KEY_RELEASE_MASK;
     switch (sc) {

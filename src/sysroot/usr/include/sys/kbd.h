@@ -1,3 +1,3 @@
 #pragma once
 
-extern char kbd_scancode(uint8_t sc);
+extern char scancode(uint8_t sc);

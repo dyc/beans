@@ -31,13 +31,13 @@ void kmain(void) {
     // write to end of buffer or to cursor, if wrap around
     size_t n = kbdc > KEYBOARD_CURSOR ? sizeof(KEYBOARD_BUFFER): KEYBOARD_CURSOR;
     for (size_t i = kbdc; i < n; ++i) {
-      kbdbuf[i - kbdc] = kbd_scancode(KEYBOARD_BUFFER[i]);
+      kbdbuf[i - kbdc] = scancode(KEYBOARD_BUFFER[i]);
     }
     written = n - kbdc;
     // handle wrap around
     if (n > KEYBOARD_CURSOR) {
       for (size_t i = 0; i < KEYBOARD_CURSOR; ++i) {
-        kbdbuf[written + i] = kbd_scancode(KEYBOARD_BUFFER[i]);
+        kbdbuf[written + i] = scancode(KEYBOARD_BUFFER[i]);
       }
     }
     kbdbuf[written + 1] = 0;
