@@ -2,7 +2,8 @@
 
 #include <kernel/desc.h>
 
-extern const uint8_t KEYBOARD_IRQ;
+// temporary home for kbd output until we have a filesystem
+extern char KEYBOARD_BUFFER[128];
+extern size_t KEYBOARD_CURSOR;
 
-extern int keyboard_handler(irq_state_t* s);
 extern void keyboard_install();

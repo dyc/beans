@@ -7,11 +7,13 @@ BIN_DIR=$(BUILD_DIR)/bin
 ISO_DIR=$(BUILD_DIR)/iso
 KERNEL_BUILD_DIR=$(BUILD_DIR)/kernel
 KERNELASM_BUILD_DIR=$(KERNEL_BUILD_DIR)/asm
+LIB_BUILD_DIR=$(BUILD_DIR)/lib
 
 SRC_DIR=src
 BOOT_SRC_DIR=$(SRC_DIR)/boot
 KERNEL_SRC_DIR=$(SRC_DIR)/kernel
 KERNELASM_SRC_DIR=$(KERNEL_SRC_DIR)/asm
+LIB_SRC_DIR=$(SRC_DIR)/lib
 SYSROOT_SRC_DIR=$(SRC_DIR)/sysroot
 
 #### kernel ####
@@ -31,6 +33,14 @@ KERNEL_OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ
 
 KERNEL_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
 
+#### lib ####
+# TODO: shared libraries
+# c sources
+LIB_OBJS=$(patsubst %.c,%.o,$(wildcard $(LIB_SRC_DIR)/*.c))
+# source path -> build path
+LIB_OBJS:=$(patsubst $(LIB_SRC_DIR)/%,$(LIB_BUILD_DIR)/%,$(LIB_OBJS))
+LIB_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/sys/*.h $(SYSROOT_SRC_DIR)/usr/include/sys/*/*.h)
+
 all: $(BIN_DIR)/howdy.iso
 
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
@@ -41,7 +51,11 @@ $(KERNELASM_BUILD_DIR)/%.o: $(KERNELASM_SRC_DIR)/%.S
 	@mkdir -p $(KERNELASM_BUILD_DIR)
 	${AS} $< -o $@
 
-$(BIN_DIR)/howdy.bin: $(KERNEL_OBJS)
+$(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c $(LIB_HEADERS)
+	@mkdir -p $(LIB_BUILD_DIR)
+	${CC} -c $< -o $@ $(KCFLAGS)
+
+$(BIN_DIR)/howdy.bin: $(KERNEL_OBJS) $(LIB_OBJS)
 	@mkdir -p $(BIN_DIR)
 	${CC} -T $(KERNEL_SRC_DIR)/linker.ld -o $@ $(KCFLAGS) $^ -lgcc
 
