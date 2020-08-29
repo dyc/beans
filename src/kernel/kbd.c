@@ -1,4 +1,5 @@
 #include <kernel/desc.h>
+#include <kernel/macros.h>
 
 #include <sys/device.h>
 #include <sys/io.h>
@@ -11,7 +12,8 @@ static const uint8_t KEYBOARD_PORT = 0x60;
 static const uint8_t KEYBOARD_PENDING = 0x64;
 
 static int keyboard_handler(irq_state_t* s) {
-  (void)(s);
+  IGNORE(s);
+
   if (inb(KEYBOARD_PENDING) & 0x01) {
     KEYBOARD_BUFFER[KEYBOARD_CURSOR++] = inb(KEYBOARD_PORT);
     if (KEYBOARD_CURSOR >= sizeof(KEYBOARD_BUFFER)) {

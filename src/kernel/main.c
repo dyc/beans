@@ -1,8 +1,18 @@
 #include <kernel/desc.h>
 #include <kernel/serial.h>
+#include <kernel/printf.h>
 #include <kernel/vga.h>
 #include <sys/device.h>
 #include <sys/kbd.h>
+
+static char heartbeat_buf[20];
+void timer_heartbeat(unsigned long t) {
+  // heartbeat every 10 seconds
+  if (t % 1000 == 0) {
+    sprintf(heartbeat_buf, "hb %d\n", t / 1000);
+    serial_write(SERIAL_PORT_COM1, heartbeat_buf);
+  }
+}
 
 void kmain(void) {
   gdt_install();
@@ -11,6 +21,11 @@ void kmain(void) {
 
   serial_enable(SERIAL_PORT_COM1);
   serial_write(SERIAL_PORT_COM1, "gdt, idt, irq ready\n");
+
+  pit_install();
+  pit_set_freq_hz(100);
+  pit_set_timer_cb(timer_heartbeat);
+  serial_write(SERIAL_PORT_COM1, "pit ready\n");
 
   keyboard_install();
   serial_write(SERIAL_PORT_COM1, "kbd ready\n");
