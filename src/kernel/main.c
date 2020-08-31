@@ -1,25 +1,44 @@
 #include <kernel/desc.h>
-#include <kernel/serial.h>
+#include <kernel/multiboot.h>
 #include <kernel/printf.h>
+#include <kernel/serial.h>
 #include <kernel/vga.h>
 #include <sys/device.h>
 #include <sys/kbd.h>
 
-static char heartbeat_buf[28];
+static char scratchbuf[26];
 void timer_heartbeat(unsigned long t) {
   // heartbeat every 10 seconds
   if (t % 1000 == 0) {
-    sprintf(heartbeat_buf, "%ds since boot\n", t / 100);
-    serial_write(SERIAL_PORT_COM1, heartbeat_buf);
+    sprintf(scratchbuf, "%ds since boot\n", t / 100);
+    serial_write(SERIAL_PORT_COM1, scratchbuf);
   }
 }
 
-void kmain(void) {
+void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
+  serial_enable(SERIAL_PORT_COM1);
+  serial_write(SERIAL_PORT_COM1, "serial enabled\n");
+
+  if (MULTIBOOT_BOOTLOADER_MAGIC != mb_magic) {
+    sprintf(scratchbuf, "eax: %d\n", mb_magic);
+    serial_write(SERIAL_PORT_COM1, "multiboot magic check failed\n");
+    serial_write(SERIAL_PORT_COM1, scratchbuf);
+    while(1);
+  } else {
+    serial_write(SERIAL_PORT_COM1, "multiboot magic seems ok\n");
+  }
+
+  sprintf(scratchbuf, "found %d modules\n", mb_info->mods_count);
+  serial_write(SERIAL_PORT_COM1, scratchbuf);
+
+  if (mb_info->mods_count != 1) {
+    serial_write(SERIAL_PORT_COM1, "can only handle one module for now...\n");
+  }
+  ((void(*)(void)) mb_info->mods_addr)();
+
   gdt_install();
   idt_install();
   irq_install();
-
-  serial_enable(SERIAL_PORT_COM1);
   serial_write(SERIAL_PORT_COM1, "gdt, idt, irq ready\n");
 
   pit_install();

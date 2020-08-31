@@ -7,12 +7,14 @@ BIN_DIR=$(BUILD_DIR)/bin
 ISO_DIR=$(BUILD_DIR)/iso
 KERNEL_BUILD_DIR=$(BUILD_DIR)/kernel
 KERNELASM_BUILD_DIR=$(KERNEL_BUILD_DIR)/asm
+KERNELMOD_BUILD_DIR=$(KERNEL_BUILD_DIR)/modules
 LIB_BUILD_DIR=$(BUILD_DIR)/lib
 
 SRC_DIR=src
 BOOT_SRC_DIR=$(SRC_DIR)/boot
 KERNEL_SRC_DIR=$(SRC_DIR)/kernel
 KERNELASM_SRC_DIR=$(KERNEL_SRC_DIR)/asm
+KERNELMOD_SRC_DIR=$(KERNEL_SRC_DIR)/modules
 LIB_SRC_DIR=$(SRC_DIR)/lib
 SYSROOT_SRC_DIR=$(SRC_DIR)/sysroot
 
@@ -24,6 +26,7 @@ CRTBEGIN_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtbegin.o)
 CRTEND_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtend.o)
 # c sources
 KERNEL_OBJS=$(patsubst %.c,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.c))
+KERNEL_OBJS:=$(KERNEL_OBJS) $(patsubst %.c,%.o,$(wildcard $(KERNELMOD_SRC_DIR)/*.c))
 # asm sources
 KERNEL_OBJS:=$(KERNEL_OBJS) $(patsubst %.S,%.o,$(wildcard $(KERNELASM_SRC_DIR)/*.S))
 # source path -> build path
@@ -43,16 +46,26 @@ LIB_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/sys/*.h $(SYSROOT_SRC_DI
 
 all: $(BIN_DIR)/beans.iso
 
-$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
+# directories
+$(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNELASM_BUILD_DIR) $(KERNELMOD_BUILD_DIR)
+$(KERNEL_BUILD_DIR):
 	@mkdir -p $(KERNEL_BUILD_DIR)
+$(KERNELASM_BUILD_DIR):
+	@mkdir -p $(KERNELASM_BUILD_DIR)
+$(KERNELMOD_BUILD_DIR):
+	@mkdir -p $(KERNELMOD_BUILD_DIR)
+
+$(LIB_OBJS): | $(LIB_BUILD_DIR)
+$(LIB_BUILD_DIR):
+	@mkdir -p $(LIB_BUILD_DIR)
+
+$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
 	${CC} -c $< -o $@ $(KCFLAGS)
 
 $(KERNELASM_BUILD_DIR)/%.o: $(KERNELASM_SRC_DIR)/%.S
-	@mkdir -p $(KERNELASM_BUILD_DIR)
 	${AS} $< -o $@
 
 $(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c $(LIB_HEADERS)
-	@mkdir -p $(LIB_BUILD_DIR)
 	${CC} -c $< -o $@ $(KCFLAGS)
 
 $(BIN_DIR)/beans.bin: $(KERNEL_OBJS) $(LIB_OBJS)
@@ -65,8 +78,10 @@ check: $(BIN_DIR)/beans.bin
 $(BIN_DIR)/beans.iso: check
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
+	mkdir -p $(ISO_DIR)/modules
 	cp $(BIN_DIR)/beans.bin $(ISO_DIR)/boot/beans.bin
 	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
+	cp $(KERNELMOD_BUILD_DIR)/*.o $(ISO_DIR)/modules
 	grub-mkrescue -o $(BIN_DIR)/beans.iso $(ISO_DIR)
 
 run: $(BIN_DIR)/beans.iso

@@ -29,6 +29,8 @@ _start:
 
       cli
       call _init
+      push %eax
+      push %ebx
       call kmain
       call _fini
       cli
