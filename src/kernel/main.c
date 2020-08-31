@@ -28,13 +28,15 @@ void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
     serial_write(SERIAL_PORT_COM1, "multiboot magic seems ok\n");
   }
 
-  sprintf(scratchbuf, "found %d modules\n", mb_info->mods_count);
-  serial_write(SERIAL_PORT_COM1, scratchbuf);
-
-  if (mb_info->mods_count != 1) {
-    serial_write(SERIAL_PORT_COM1, "can only handle one module for now...\n");
+  if (mb_info->flags & MULTIBOOT_INFO_MODS) {
+    sprintf(scratchbuf, "found %d modules\n", mb_info->mods_count);
+    serial_write(SERIAL_PORT_COM1, scratchbuf);
+    if (mb_info->mods_count != 1) {
+      serial_write(SERIAL_PORT_COM1, "can only handle one module for now...\n");
+    } else {
+      ((void(*)(void)) mb_info->mods_addr)();
+    }
   }
-  ((void(*)(void)) mb_info->mods_addr)();
 
   gdt_install();
   idt_install();

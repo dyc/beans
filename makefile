@@ -35,10 +35,11 @@ KERNEL_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_OBJS)
 # link order matters here
 KERNEL_OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
 
-KERNEL_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
+KERNEL_HEADERS=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
 
 ## modules ##
-KERNELMOD_OBJS:=$(patsubst %.c,%.mod,$(wildcard $(KERNELMOD_SRC_DIR)/*.c))
+# KERNELMOD_OBJS=$(patsubst %.c,%.mod,$(wildcard $(KERNELMOD_SRC_DIR)/*.c))
+KERNELMOD_OBJS:=$(patsubst %.S,%.mod,$(wildcard $(KERNELMOD_SRC_DIR)/*.S))
 KERNELMOD_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNELMOD_OBJS))
 # todo: shot in the dark lol, read up on loading modules...
 KMODCFLAGS=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Wl,--oformat=binary -fPIE
@@ -74,12 +75,15 @@ $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
 $(KERNELASM_BUILD_DIR)/%.o: $(KERNELASM_SRC_DIR)/%.S
 	${AS} $< -o $@
 
-$(KERNELMOD_BUILD_DIR)/%.o: $(KERNELMOD_SRC_DIR)/%.c
-	${CC} -c $< -o $@ $(KMODCFLAGS)
+$(KERNELMOD_BUILD_DIR)/%.mod: $(KERNELMOD_SRC_DIR)/%.S
+	${AS} $< -o $@
+
+#$(KERNELMOD_BUILD_DIR)/%.mod: $(KERNELMOD_SRC_DIR)/%.c
+#	${CC} -c $< -o $@ $(KMODCFLAGS)
 
 # todo: figure out why -Wl isn't working above and remove this
-$(KERNELMOD_BUILD_DIR)/%.mod: $(KERNELMOD_BUILD_DIR)/%.o
-	${LD} --oformat binary -o $@ $<
+# $(KERNELMOD_BUILD_DIR)/%.mod: $(KERNELMOD_BUILD_DIR)/%.o
+	# ${LD} --oformat binary -o $@ $<
 
 $(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c $(LIB_HEADERS)
 	${CC} -c $< -o $@ $(KCFLAGS)
