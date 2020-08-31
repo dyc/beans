@@ -1,6 +1,7 @@
 PREFIX=/usr/local/cross
 AS=$(PREFIX)/bin/i686-elf-as
 CC=$(PREFIX)/bin/i686-elf-gcc
+LD=$(PREFIX)/bin/i686-elf-ld
 
 BUILD_DIR=build
 BIN_DIR=$(BUILD_DIR)/bin
@@ -26,7 +27,7 @@ CRTBEGIN_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtbegin.o)
 CRTEND_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtend.o)
 # c sources
 KERNEL_OBJS=$(patsubst %.c,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.c))
-KERNEL_OBJS:=$(KERNEL_OBJS) $(patsubst %.c,%.o,$(wildcard $(KERNELMOD_SRC_DIR)/*.c))
+KERNEL_OBJS:=$(filter-out $(wildcard $(KERNELMOD_SRC_DIR/*.c)), $(KERNEL_OBJS))
 # asm sources
 KERNEL_OBJS:=$(KERNEL_OBJS) $(patsubst %.S,%.o,$(wildcard $(KERNELASM_SRC_DIR)/*.S))
 # source path -> build path
@@ -35,6 +36,12 @@ KERNEL_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_OBJS)
 KERNEL_OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
 
 KERNEL_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
+
+## modules ##
+KERNELMOD_OBJS:=$(patsubst %.c,%.mod,$(wildcard $(KERNELMOD_SRC_DIR)/*.c))
+KERNELMOD_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNELMOD_OBJS))
+# todo: shot in the dark lol, read up on loading modules...
+KMODCFLAGS=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Wl,--oformat=binary -fPIE
 
 #### lib ####
 # todo: shared libraries
@@ -47,11 +54,13 @@ LIB_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/sys/*.h $(SYSROOT_SRC_DI
 all: $(BIN_DIR)/beans.iso
 
 # directories
-$(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNELASM_BUILD_DIR) $(KERNELMOD_BUILD_DIR)
+$(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNELASM_BUILD_DIR)
 $(KERNEL_BUILD_DIR):
 	@mkdir -p $(KERNEL_BUILD_DIR)
 $(KERNELASM_BUILD_DIR):
 	@mkdir -p $(KERNELASM_BUILD_DIR)
+
+$(KERNELMOD_OBJS): | $(KERNELMOD_BUILD_DIR)
 $(KERNELMOD_BUILD_DIR):
 	@mkdir -p $(KERNELMOD_BUILD_DIR)
 
@@ -65,6 +74,13 @@ $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
 $(KERNELASM_BUILD_DIR)/%.o: $(KERNELASM_SRC_DIR)/%.S
 	${AS} $< -o $@
 
+$(KERNELMOD_BUILD_DIR)/%.o: $(KERNELMOD_SRC_DIR)/%.c
+	${CC} -c $< -o $@ $(KMODCFLAGS)
+
+# todo: figure out why -Wl isn't working above and remove this
+$(KERNELMOD_BUILD_DIR)/%.mod: $(KERNELMOD_BUILD_DIR)/%.o
+	${LD} --oformat binary -o $@ $<
+
 $(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c $(LIB_HEADERS)
 	${CC} -c $< -o $@ $(KCFLAGS)
 
@@ -75,13 +91,13 @@ $(BIN_DIR)/beans.bin: $(KERNEL_OBJS) $(LIB_OBJS)
 check: $(BIN_DIR)/beans.bin
 	grub-file --is-x86-multiboot $(BIN_DIR)/beans.bin
 
-$(BIN_DIR)/beans.iso: check
+$(BIN_DIR)/beans.iso: check $(KERNELMOD_OBJS)
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
 	mkdir -p $(ISO_DIR)/modules
 	cp $(BIN_DIR)/beans.bin $(ISO_DIR)/boot/beans.bin
 	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
-	cp $(KERNELMOD_BUILD_DIR)/*.o $(ISO_DIR)/modules
+	cp $(KERNELMOD_BUILD_DIR)/*.mod $(ISO_DIR)/modules
 	grub-mkrescue -o $(BIN_DIR)/beans.iso $(ISO_DIR)
 
 run: $(BIN_DIR)/beans.iso
