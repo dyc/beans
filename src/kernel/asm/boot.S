@@ -28,9 +28,11 @@ _start:
       mov $stack_top, %esp
 
       cli
+      push %eax // caller-saved
       call _init
-      push %eax
-      push %ebx
+      pop %eax
+      push %eax // multiboot eax magic
+      push %ebx // multiboot info pointer
       call kmain
       call _fini
       cli
