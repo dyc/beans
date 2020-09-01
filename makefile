@@ -21,7 +21,7 @@ SYSROOT_SRC_DIR=$(SRC_DIR)/sysroot
 
 #### kernel ####
 # todo: doesn't seem like i686-elf-gcc has -nostdlib or -nostartfiles...
-KCFLAGS=-std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
+KCFLAGS=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
 CRTI_OBJ=$(KERNELASM_BUILD_DIR)/crti.o
 CRTN_OBJ=$(KERNELASM_BUILD_DIR)/crtn.o
 CRTBEGIN_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtbegin.o)
@@ -52,9 +52,9 @@ LIB_OBJS=$(patsubst %.c,%.o,$(wildcard $(LIB_SRC_DIR)/*.c))
 LIB_OBJS:=$(patsubst $(LIB_SRC_DIR)/%,$(LIB_BUILD_DIR)/%,$(LIB_OBJS))
 LIB_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/sys/*.h $(SYSROOT_SRC_DIR)/usr/include/sys/*/*.h)
 
-all: KCFLAGS+=-O2
 all: $(BIN_DIR)/beans.iso
 
+debug: KCFLAGS:=$(filter-out -O2,$(KCFLAGS))
 debug: KCFLAGS+=-g
 debug: $(BIN_DIR)/beans.iso
 

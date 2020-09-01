@@ -94,7 +94,9 @@ cd grubbuild
 ../grub-2.04/configure --prefix="$PREFIX" --target=$TARGET --disable-werror
 ```
 
-a note on macos debuggers: we weren't able to get lldb to load the kernel--although
+a note on macos debuggers
+
+we weren't able to get lldb to load the kernel--although
 we made only a pitiful effort to do so--and saw mention of 32 bit support being dropped
 in catalina so we went back to gdb. the version (8.0.1) of gdb we had `brew install`'ed
 a long while ago didn't support 32 bit ELFs so we reinstalled it. we think there
@@ -124,4 +126,5 @@ debugger debugging
     (gdb) set architecture <tab> # should show lots of stuff (200 for me)
   - (gdb) set gnutarget <tab> # should show lots of stuff (200 for me)
   - (gdb) show configuration
-  - remember, we want to load target: `file ./build/bin/beans.bin` # want not stripped
+  - remember, we want to load target: `file ./build/bin/beans.bin`
+    - want not stripped
