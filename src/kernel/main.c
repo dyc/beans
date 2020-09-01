@@ -36,32 +36,34 @@ void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
   serial_write(SERIAL_PORT_COM1, "vga ready\n");
 
   size_t kbdc = 0;
-  char kbdbuf[256];
-  for(;;) {
+  char kbdbuf[8];
+  while(1) {
     if (kbdc == KEYBOARD_CURSOR) {
       asm("hlt");
       continue;
     }
 
     size_t written = 0;
+    bool wrap = KEYBOARD_CURSOR < kbdc;
     // write to end of buffer or to cursor, if wrap around
-    size_t n = kbdc > KEYBOARD_CURSOR ? sizeof(KEYBOARD_BUFFER): KEYBOARD_CURSOR;
+    size_t n = wrap ? sizeof(KEYBOARD_BUFFER): KEYBOARD_CURSOR;
     for (size_t i = kbdc; i < n; ++i) {
       kbdbuf[i - kbdc] = scancode(KEYBOARD_BUFFER[i]);
     }
     written = n - kbdc;
     // handle wrap around
-    if (n > KEYBOARD_CURSOR) {
+    if (wrap) {
       for (size_t i = 0; i < KEYBOARD_CURSOR; ++i) {
         kbdbuf[written + i] = scancode(KEYBOARD_BUFFER[i]);
       }
       written += KEYBOARD_CURSOR;
     }
-    kbdbuf[written + 1] = 0;
+    kbdbuf[written] = 0;
     vga_write(kbdbuf);
     // if we get interrupt here we may skip over some keys, that's ok
     kbdc = KEYBOARD_CURSOR;
-    if (kbdbuf[written] == 'm') {
+    if (kbdbuf[written - 1] == '\n') {
+      vga_write("oo we're gonna load some modules now\n");
       break;
     }
   }
