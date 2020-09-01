@@ -1,7 +1,6 @@
 PREFIX=/usr/local/cross
 AS=$(PREFIX)/bin/i686-elf-as
 CC=$(PREFIX)/bin/i686-elf-gcc
-LD=$(PREFIX)/bin/i686-elf-ld
 OBJCOPY=$(PREFIX)/bin/i686-elf-objcopy
 
 BUILD_DIR=build
