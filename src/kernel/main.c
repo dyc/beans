@@ -19,26 +19,6 @@ void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
   serial_enable(SERIAL_PORT_COM1);
   serial_write(SERIAL_PORT_COM1, "serial enabled\n");
 
-  if (MULTIBOOT_BOOTLOADER_MAGIC != mb_magic) {
-    sprintf(scratchbuf, "eax: %d\n", mb_magic);
-    serial_write(SERIAL_PORT_COM1, "multiboot magic check failed\n");
-    serial_write(SERIAL_PORT_COM1, scratchbuf);
-    while(1);
-  } else {
-    serial_write(SERIAL_PORT_COM1, "multiboot magic seems ok\n");
-  }
-
-  if (mb_info->flags & MULTIBOOT_INFO_MODS) {
-    sprintf(scratchbuf, "found %d modules\n", mb_info->mods_count);
-    serial_write(SERIAL_PORT_COM1, scratchbuf);
-    if (mb_info->mods_count != 1) {
-      serial_write(SERIAL_PORT_COM1, "can only handle one module for now...\n");
-    } else {
-      multiboot_module_t* loopy = (multiboot_module_t*) mb_info->mods_addr;
-      ((void(*)(void)) loopy->mod_start)();
-    }
-  }
-
   gdt_install();
   idt_install();
   irq_install();
@@ -80,5 +60,28 @@ void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
     vga_write(kbdbuf);
     // if we get interrupt here we may skip over some keys, that's ok
     kbdc = KEYBOARD_CURSOR;
+    if (kbdbuf[written] == 'm') {
+      break;
+    }
+  }
+
+  if (MULTIBOOT_BOOTLOADER_MAGIC != mb_magic) {
+    sprintf(scratchbuf, "eax: %d\n", mb_magic);
+    serial_write(SERIAL_PORT_COM1, "multiboot magic check failed\n");
+    serial_write(SERIAL_PORT_COM1, scratchbuf);
+    while(1);
+  } else {
+    serial_write(SERIAL_PORT_COM1, "multiboot magic seems ok\n");
+  }
+
+  if (mb_info->flags & MULTIBOOT_INFO_MODS) {
+    sprintf(scratchbuf, "found %d modules\n", mb_info->mods_count);
+    serial_write(SERIAL_PORT_COM1, scratchbuf);
+    if (mb_info->mods_count != 1) {
+      serial_write(SERIAL_PORT_COM1, "can only handle one module for now...\n");
+    } else {
+      multiboot_module_t* loopy = (multiboot_module_t*) mb_info->mods_addr;
+      ((void(*)(void)) loopy->mod_start)();
+    }
   }
 }
