@@ -2,6 +2,7 @@ PREFIX=/usr/local/cross
 AS=$(PREFIX)/bin/i686-elf-as
 CC=$(PREFIX)/bin/i686-elf-gcc
 LD=$(PREFIX)/bin/i686-elf-ld
+OBJCOPY=$(PREFIX)/bin/i686-elf-objcopy
 
 BUILD_DIR=build
 BIN_DIR=$(BUILD_DIR)/bin
@@ -106,6 +107,8 @@ run: $(BIN_DIR)/beans.iso
 	qemu-system-i386 -serial stdio -cdrom $(BIN_DIR)/beans.iso
 
 gdb: debug
+	$(OBJCOPY) --only-keep-debug $(BIN_DIR)/beans.bin $(BIN_DIR)/beans.sym
+	$(OBJCOPY) --strip-debug $(BIN_DIR)/beans.bin
 	qemu-system-i386 -s -S -serial stdio -cdrom $(BIN_DIR)/beans.iso
 
 .PHONY: clean

@@ -93,3 +93,29 @@ mkdir grubbuild
 cd grubbuild
 ../grub-2.04/configure --prefix="$PREFIX" --target=$TARGET --disable-werror
 ```
+
+a note on macos debuggers: we weren't able to get lldb to load the kernel--although
+we made only a pitiful effort to do so--and saw mention of 32 bit support being dropped
+in catalina so we went back to gdb. the version (8.0.1) of gdb we had `brew install`'ed
+a long while ago didn't support 32 bit ELFs so we reinstalled it. we think there
+used to be a `--with-all-targets` option for `brew install gdb` but it looks like
+that is default enabled so at the time of this writing `brew install gdb` is all
+that's needed to get a version (e.g. 9.2 for me) that can load our kernel.
+
+to gdb:
+
+```sh
+make gdb # will output symbols in build/bin/beans.sym
+# somewhere else
+gdb ./build/bin/beans.sym
+target remote :1234
+...
+```
+
+debugger debugging
+- check supported architectures:
+  - (gdb) set arch debug 1
+    (gdb) set architecture <tab> # should show lots of stuff (200 for me)
+  - (gdb) set gnutarget <tab> # should show lots of stuff (200 for me)
+  - (gdb) show configuration
+  - remember, we want to load target: `file ./build/bin/beans.bin`
