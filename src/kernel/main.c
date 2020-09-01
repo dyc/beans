@@ -55,6 +55,7 @@ void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
       for (size_t i = 0; i < KEYBOARD_CURSOR; ++i) {
         kbdbuf[written + i] = scancode(KEYBOARD_BUFFER[i]);
       }
+      written += KEYBOARD_CURSOR;
     }
     kbdbuf[written + 1] = 0;
     vga_write(kbdbuf);
