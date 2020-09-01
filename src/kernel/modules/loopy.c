@@ -1,3 +1,3 @@
-void _start() {
+void loopy() {
   while(1);
 }

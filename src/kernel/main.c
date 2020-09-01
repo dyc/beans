@@ -34,7 +34,8 @@ void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
     if (mb_info->mods_count != 1) {
       serial_write(SERIAL_PORT_COM1, "can only handle one module for now...\n");
     } else {
-      ((void(*)(void)) mb_info->mods_addr)();
+      multiboot_module_t* loopy = (multiboot_module_t*) mb_info->mods_addr;
+      ((void(*)(void)) loopy->mod_start)();
     }
   }
 
