@@ -1,3 +1,3 @@
-void spin() {
+void _start() {
   while(1);
 }

@@ -99,7 +99,7 @@ static void pic_remap() {
 
 void c_irq_handler(irq_state_t* s) {
   disable_int();
-  if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (PIC2_OFFSET + 8)) {
+  if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (unsigned int) PIC2_OFFSET + 8) {
     size_t i = s->interrupt - PIC1_OFFSET;
     if (!irq_handlers[i] || !irq_handlers[i](s)) {
       // no handler or our handler failed
