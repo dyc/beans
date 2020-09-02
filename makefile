@@ -42,6 +42,7 @@ KERNEL_HEADERS=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SR
 # todo: asm modules?
 KERNELMOD_OBJS=$(patsubst %.c,%.mod,$(wildcard $(KERNELMOD_SRC_DIR)/*.c))
 KERNELMOD_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNELMOD_OBJS))
+# todo: make these elfs; modules as flat bins for now
 KMODCFLAGS=-ffreestanding -nostartfiles -nostdlib -fPIE -O2 -Wl,--oformat=binary
 
 #### lib ####
