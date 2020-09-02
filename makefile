@@ -18,6 +18,7 @@ KERNELASM_SRC_DIR=$(KERNEL_SRC_DIR)/asm
 KERNELMOD_SRC_DIR=$(KERNEL_SRC_DIR)/modules
 LIB_SRC_DIR=$(SRC_DIR)/lib
 SYSROOT_SRC_DIR=$(SRC_DIR)/sysroot
+LINKER_SRC_DIR=$(SRC_DIR)/linker
 
 #### kernel ####
 # todo: doesn't seem like i686-elf-gcc has -nostdlib or -nostartfiles...
@@ -37,13 +38,15 @@ KERNEL_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_OBJS)
 KERNEL_OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
 
 KERNEL_HEADERS=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
+KERNEL_LINKER_SCRIPT=$(LINKER_SRC_DIR)/kernel.ld
 
 ## modules ##
 # todo: asm modules?
 KERNELMOD_OBJS=$(patsubst %.c,%.mod,$(wildcard $(KERNELMOD_SRC_DIR)/*.c))
 KERNELMOD_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNELMOD_OBJS))
 # todo: make these elfs; modules as flat bins for now
-KMODCFLAGS=-ffreestanding -nostartfiles -nostdlib -fPIE -O2 -Wl,--oformat=binary
+KMODCFLAGS=-ffreestanding -nostartfiles -nostdlib -fPIE -O2 -Wl,--oformat=binary -Isrc/sysroot/usr/include
+MODULE_LINKER_SCRIPT=$(LINKER_SRC_DIR)/module.ld
 
 #### lib ####
 # todo: shared libraries
@@ -80,16 +83,19 @@ $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
 $(KERNELASM_BUILD_DIR)/%.o: $(KERNELASM_SRC_DIR)/%.S
 	${AS} $< -o $@
 
+$(KERNELMOD_BUILD_DIR)/%.o: $(KERNELMOD_SRC_DIR)/%.c
+	${CC} $(KMODCFLAGS) -o $@ -c $<
+
 # ah, make sure not to use -c which skips linking
-$(KERNELMOD_BUILD_DIR)/%.mod: $(KERNELMOD_SRC_DIR)/%.c
-	${CC} $(KMODCFLAGS) -o $@ $<
+$(KERNELMOD_BUILD_DIR)/%.mod: $(KERNEL_OBJS) $(LIB_OBJS) $(KERNELMOD_BUILD_DIR)/%.o
+	${CC} -T $(MODULE_LINKER_SCRIPT) $(KMODCFLAGS) -o $@ $<
 
 $(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c $(LIB_HEADERS)
 	${CC} $(KCFLAGS) -o $@ $<
 
 $(BIN_DIR)/beans.bin: $(KERNEL_OBJS) $(LIB_OBJS)
 	@mkdir -p $(BIN_DIR)
-	${CC} -T $(KERNEL_SRC_DIR)/linker.ld -o $@ $(KCFLAGS) $^ -lgcc
+	${CC} -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
 
 check: $(BIN_DIR)/beans.bin
 	grub-file --is-x86-multiboot $(BIN_DIR)/beans.bin
