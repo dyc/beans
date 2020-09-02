@@ -2,22 +2,22 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct {
+struct idt_descriptor {
   uint16_t limit;
   uint32_t base;
-} __attribute__((packed)) idtr_t;
+} __attribute__((packed));
 
-typedef struct {
+struct idt_entry {
   uint16_t offset_low;
   uint16_t selector;
   uint8_t zero;
   uint8_t flags;
   uint16_t offset_high;
-} __attribute__((packed)) idt_entry_t;
+} __attribute__((packed)) idt_entry;
 
 static struct {
-  idtr_t idtr;
-  idt_entry_t entries[256];
+  struct idt_descriptor idtr;
+  struct idt_entry entries[256];
 } idt __attribute__((used));
 
 void idt_set_gate(
@@ -39,7 +39,7 @@ void idt_install() {
   idt.idtr.limit = sizeof(idt.entries) - 1;
   idt.idtr.base = (uint32_t) &idt.entries[0];
 
-  size_t n = sizeof(idt.entries) / sizeof(idt_entry_t);
+  size_t n = sizeof(idt.entries) / sizeof(struct idt_entry);
   for (size_t i = 0; i < n; ++i) {
     idt_set_gate(i, 0, 0, 0);
   }

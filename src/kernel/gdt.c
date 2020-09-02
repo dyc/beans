@@ -1,12 +1,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct {
+struct gdt_descriptor {
   uint16_t limit;
   uint32_t base;
-} __attribute__((packed)) gdtr_t;
+} __attribute__((packed));
 
-typedef struct {
+struct gdt_entry {
   uint16_t limit_low;
   uint16_t base_low;
   uint8_t base_mid;
@@ -14,11 +14,11 @@ typedef struct {
   uint8_t limit_high : 4;
   uint8_t flags : 4;
   uint8_t base_high;
-} __attribute__((packed)) gdt_entry_t;
+} __attribute__((packed));
 
 static struct {
-  gdtr_t gdtr;
-  gdt_entry_t entries[3];
+  struct gdt_descriptor gdtr;
+  struct gdt_entry entries[3];
 } gdt __attribute__((used));
 
 static void set_segment(

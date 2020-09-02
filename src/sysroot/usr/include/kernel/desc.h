@@ -4,19 +4,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef enum {
+enum pic_port {
   PIC1 = 0x20,
   PIC2 = 0xA0,
-} pic_port_t;
+};
 
-typedef struct {
+struct irq_state {
   unsigned int gs, fs, es, ds;
   unsigned int edi, esi, ebp, esp, ebx, edx, ecx, eax;
   unsigned int interrupt, error;
   unsigned int eip, cs, eflags, uresp, ss;
-} __attribute__((packed)) irq_state_t;
-
-typedef int (*irq_handler_t) (irq_state_t* s);
+} __attribute__((packed));
 
 extern void gdt_install();
 extern void idt_install();
@@ -28,4 +26,4 @@ extern void idt_set_gate(
 );
 extern void pic_ack(size_t irq);
 extern void irq_install();
-extern void irq_install_handler(size_t irq, irq_handler_t handler);
+extern void irq_install_handler(size_t irq, int(*handler)(struct irq_state*));

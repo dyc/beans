@@ -47,7 +47,7 @@ static __attribute__((used)) void (*irqs[16]) (void) = {
   irq_handler_start46,
   irq_handler_start47,
 };
-static __attribute__((used)) int (*irq_handlers[16])(irq_state_t* s) = {};
+static __attribute__((used)) int (*irq_handlers[16])(struct irq_state* s) = {};
 
 static inline void disable_int() {
   asm volatile("cli");
@@ -57,11 +57,11 @@ static inline void enable_int() {
   asm volatile("sti");
 }
 
-static inline uint8_t pic_command(pic_port_t p) {
+static inline uint8_t pic_command(enum pic_port p) {
   return p;
 }
 
-static inline uint8_t pic_data(pic_port_t p) {
+static inline uint8_t pic_data(enum pic_port p) {
   return p + 1;
 }
 
@@ -97,7 +97,7 @@ static void pic_remap() {
   iowait();
 }
 
-void c_irq_handler(irq_state_t* s) {
+void c_irq_handler(struct irq_state* s) {
   disable_int();
   if (s->interrupt >= PIC1_OFFSET && s->interrupt <= (unsigned int) PIC2_OFFSET + 8) {
     size_t i = s->interrupt - PIC1_OFFSET;
@@ -129,7 +129,7 @@ void irq_install() {
   }
 }
 
-void irq_install_handler(size_t irq, irq_handler_t handler) {
+void irq_install_handler(size_t irq, int(*handler)(struct irq_state*)) {
   disable_int();
   irq_handlers[irq] = handler;
   enable_int();

@@ -15,13 +15,13 @@ static const uint8_t CHANNEL0_LOHI_STROBE = 0x34;
 
 static size_t divisor = 0xFFFFFFFF;
 static unsigned long t = 0;
-static timer_cb_t on_timer;
+static void(*on_timer)(unsigned long);
 
-void pit_set_timer_cb(timer_cb_t cb) {
+void pit_set_timer_cb(void(*cb)(unsigned long)) {
   on_timer = cb;
 }
 
-static int pit_handler(irq_state_t* s) {
+static int pit_handler(struct irq_state* s) {
   IGNORE(s);
   ++t;
   if (on_timer) {
