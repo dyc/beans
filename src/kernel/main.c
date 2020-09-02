@@ -15,7 +15,7 @@ void timer_heartbeat(unsigned long t) {
   }
 }
 
-void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
+void kmain(struct multiboot_info* mb_info, uint32_t mb_magic) {
   serial_enable(SERIAL_PORT_COM1);
   serial_write(SERIAL_PORT_COM1, "serial enabled\n");
 
@@ -83,7 +83,7 @@ void kmain(multiboot_info_t* mb_info, uint32_t mb_magic) {
     if (mb_info->mods_count != 1) {
       serial_write(SERIAL_PORT_COM1, "can only handle one module for now...\n");
     } else {
-      multiboot_module_t* loopy = (multiboot_module_t*) mb_info->mods_addr;
+      struct multiboot_module* loopy = (struct multiboot_module*) mb_info->mods_addr;
       ((void(*)(void)) loopy->mod_start)();
     }
   }
