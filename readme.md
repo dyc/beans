@@ -109,7 +109,7 @@ for some reason, we have to `symbol-file` before `file` (possible gdb [bug](http
 ```sh
 make gdb # will output symbols in build/bin/beans.sym
 (gdb) symbol-file ./build/bin/beans.sym
-(gdb) file ./build/bin/beans.bin
+(gdb) file ./build/bin/beans
 (gdb) target remote :1234
 (gdb) break src/kernel/main.c:<somewhere useful>
 (gdb) print *loopy
@@ -123,8 +123,8 @@ _debugger debugging_
 
 - check supported architectures:
   - (gdb) set arch debug 1
-    (gdb) set architecture <tab> # should show lots of stuff (200 for us)
+  - (gdb) set architecture <tab> # should show lots of stuff (200 for us)
   - (gdb) set gnutarget <tab> # should show lots of stuff (200 for us)
   - (gdb) show configuration
-  - remember, we want to load target: `file ./build/bin/beans.bin`
+  - remember, we want to load target: `file ./build/bin/beans`
     - want not stripped
