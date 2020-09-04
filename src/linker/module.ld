@@ -1,5 +1,8 @@
 ENTRY(_module_init)
+OUTPUT_FORMAT(binary)
 SECTIONS {
+  . = 8M;
+
   .text BLOCK(4K) : ALIGN(4K) {
     *(.text)
   }

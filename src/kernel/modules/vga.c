@@ -129,6 +129,7 @@ void vga_init() {
   enable_cursor();
 }
 
-void _start() {
+void _module_init() {
   vga_init();
+  while(1);
 }

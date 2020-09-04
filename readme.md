@@ -95,13 +95,14 @@ cd grubbuild
 ```
 
 _macos debuggers_
+
 we weren't able to get lldb to load the kernel--although
 we made only a pitiful effort to do so--and saw mention of 32 bit support being dropped
 in catalina so we went back to gdb. the version (8.0.1) of gdb we had `brew install`'ed
 a long while ago didn't support 32 bit ELFs so we reinstalled it. we think there
 used to be a `--with-all-targets` option for `brew install gdb` but it looks like
 that is default enabled so at the time of this writing `brew install gdb` is all
-that's needed to get a version (e.g. 9.2 for me) that can load our kernel.
+that's needed to get a version (e.g. 9.2) that can load our kernel.
 
 for some reason, we have to `symbol-file` before `file` (possible gdb [bug](https://stackoverflow.com/questions/57239664/gdb-reading-symbols-with-symbol-file-command-on-a-core-file)):
 
@@ -119,10 +120,11 @@ make gdb # will output symbols in build/bin/beans.sym
 ```
 
 _debugger debugging_
+
 - check supported architectures:
   - (gdb) set arch debug 1
-    (gdb) set architecture <tab> # should show lots of stuff (200 for me)
-  - (gdb) set gnutarget <tab> # should show lots of stuff (200 for me)
+    (gdb) set architecture <tab> # should show lots of stuff (200 for us)
+  - (gdb) set gnutarget <tab> # should show lots of stuff (200 for us)
   - (gdb) show configuration
   - remember, we want to load target: `file ./build/bin/beans.bin`
     - want not stripped

@@ -1,120 +1,172 @@
-PREFIX=/usr/local/cross
-AS=$(PREFIX)/bin/i686-elf-as
-CC=$(PREFIX)/bin/i686-elf-gcc
-OBJCOPY=$(PREFIX)/bin/i686-elf-objcopy
+PREFIX:=/usr/local/cross
+AS:=$(PREFIX)/bin/i686-elf-as
+CC:=$(PREFIX)/bin/i686-elf-gcc
+OBJCOPY:=$(PREFIX)/bin/i686-elf-objcopy
 
-BUILD_DIR=build
-BIN_DIR=$(BUILD_DIR)/bin
-ISO_DIR=$(BUILD_DIR)/iso
-KERNEL_BUILD_DIR=$(BUILD_DIR)/kernel
-KERNELASM_BUILD_DIR=$(KERNEL_BUILD_DIR)/asm
-KERNELMOD_BUILD_DIR=$(KERNEL_BUILD_DIR)/modules
-LIB_BUILD_DIR=$(BUILD_DIR)/lib
+BUILD_DIR:=build
+BIN_DIR:=$(BUILD_DIR)/bin
+ISO_DIR:=$(BUILD_DIR)/iso
+KERNEL_BUILD_DIR:=$(BUILD_DIR)/kernel
+KERNEL_ASM_BUILD_DIR:=$(KERNEL_BUILD_DIR)/asm
+KERNEL_LIB_BUILD_DIR:=$(KERNEL_BUILD_DIR)/lib
+KERNEL_MOD_BUILD_DIR:=$(KERNEL_BUILD_DIR)/modules
+LIB_BUILD_DIR:=$(BUILD_DIR)/lib
+LIBC_BUILD_DIR:=$(BUILD_DIR)/libc
 
-SRC_DIR=src
-BOOT_SRC_DIR=$(SRC_DIR)/boot
-KERNEL_SRC_DIR=$(SRC_DIR)/kernel
-KERNELASM_SRC_DIR=$(KERNEL_SRC_DIR)/asm
-KERNELMOD_SRC_DIR=$(KERNEL_SRC_DIR)/modules
-LIB_SRC_DIR=$(SRC_DIR)/lib
-SYSROOT_SRC_DIR=$(SRC_DIR)/sysroot
-LINKER_SRC_DIR=$(SRC_DIR)/linker
+SRC_DIR:=src
+BOOT_SRC_DIR:=$(SRC_DIR)/boot
+KERNEL_SRC_DIR:=$(SRC_DIR)/kernel
+KERNEL_ASM_SRC_DIR:=$(KERNEL_SRC_DIR)/asm
+KERNEL_LIB_SRC_DIR:=$(KERNEL_SRC_DIR)/lib
+KERNEL_MOD_SRC_DIR:=$(KERNEL_SRC_DIR)/modules
+LIB_SRC_DIR:=$(SRC_DIR)/lib
+LIBC_SRC_DIR:=$(SRC_DIR)/libc
+SYSROOT_SRC_DIR:=$(SRC_DIR)/sysroot
+LINKER_SRC_DIR:=$(SRC_DIR)/linker
+
+# keep intermediates on fail
+.SECONDARY:
 
 #### kernel ####
 # todo: doesn't seem like i686-elf-gcc has -nostdlib or -nostartfiles...
-KCFLAGS=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
-CRTI_OBJ=$(KERNELASM_BUILD_DIR)/crti.o
-CRTN_OBJ=$(KERNELASM_BUILD_DIR)/crtn.o
-CRTBEGIN_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtbegin.o)
-CRTEND_OBJ=$(shell $(CC) $(KCFLAGS) -print-file-name=crtend.o)
+KCFLAGS:=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
+CRTI_OBJ:=$(KERNEL_ASM_BUILD_DIR)/crti.o
+CRTN_OBJ:=$(KERNEL_ASM_BUILD_DIR)/crtn.o
+CRTBEGIN_OBJ:=$(shell $(CC) $(KCFLAGS) -print-file-name=crtbegin.o)
+CRTEND_OBJ:=$(shell $(CC) $(KCFLAGS) -print-file-name=crtend.o)
 # c sources
-KERNEL_OBJS=$(patsubst %.c,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.c))
-KERNEL_OBJS:=$(filter-out $(wildcard $(KERNELMOD_SRC_DIR/*.c)), $(KERNEL_OBJS))
+KERNEL_OBJS:=$(patsubst %.c,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.c))
 # asm sources
-KERNEL_OBJS:=$(KERNEL_OBJS) $(patsubst %.S,%.o,$(wildcard $(KERNELASM_SRC_DIR)/*.S))
+KERNEL_OBJS+=$(patsubst %.S,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.S))
+KERNEL_OBJS+=$(patsubst %.S,%.o,$(wildcard $(KERNEL_SRC_DIR)/*/*.S))
+# build modules separately
+KERNEL_OBJS:=$(filter-out $(wildcard $(KERNEL_MOD_SRC_DIR/*.c)), $(KERNEL_OBJS))
+KERNEL_OBJS:=$(filter-out $(wildcard $(KERNEL_MOD_SRC_DIR/*.S)), $(KERNEL_OBJS))
 # source path -> build path
 KERNEL_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_OBJS))
-# link order matters here
+# add start objs
 KERNEL_OBJS:=$(CRTI_OBJ) $(CRTBEGIN_OBJ) $(KERNEL_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
-
-KERNEL_HEADERS=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
-KERNEL_LINKER_SCRIPT=$(LINKER_SRC_DIR)/kernel.ld
+KERNEL_HEADERS:=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/kernel/*.h $(SYSROOT_SRC_DIR)/usr/include/kernel/*/*.h)
+KERNEL_LINKER_SCRIPT:=$(LINKER_SRC_DIR)/kernel.ld
+# for convenience
+KERNEL_LIB_OBJS:=$(patsubst %.c,%.o,$(wildcard $(KERNEL_LIB_SRC_DIR)/*.c))
+KERNEL_LIB_OBJS+=$(patsubst %.S,%.o,$(wildcard $(KERNEL_LIB_SRC_DIR)/*.S))
+KERNEL_LIB_OBJS:=$(filter-out $(wildcard $(KERNEL_ASM_SRC_DIR/*.S)), $(KERNEL_LIB_OBJS))
+KERNEL_LIB_OBJS:=$(patsubst $(KERNEL_LIB_SRC_DIR)/%,$(KERNEL_LIB_BUILD_DIR)/%,$(KERNEL_LIB_OBJS))
 
 ## modules ##
-# todo: asm modules?
-KERNELMOD_OBJS=$(patsubst %.c,%.mod,$(wildcard $(KERNELMOD_SRC_DIR)/*.c))
-KERNELMOD_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNELMOD_OBJS))
+KERNEL_MOD_OBJS:=$(patsubst %.c,%.o,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.c))
+KERNEL_MOD_OBJS+=$(patsubst %.S,%.o,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.S))
+KERNEL_MOD_OBJS:=$(filter-out $(wildcard $(KERNEL_ASM_SRC_DIR/*.S)), $(KERNEL_MOD_OBJS))
+KERNEL_MOD_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_MOD_OBJS))
+KERNEL_MODS:=$(patsubst %.c,%.ko,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.c))
+KERNEL_MODS+=$(patsubst %.S,%.ko,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.S))
+KERNEL_MODS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_MODS))
 # todo: make these elfs; modules as flat bins for now
-KMODCFLAGS=-ffreestanding -nostartfiles -nostdlib -fPIE -O2 -Wl,--oformat=binary -Isrc/sysroot/usr/include
-MODULE_LINKER_SCRIPT=$(LINKER_SRC_DIR)/module.ld
+KMODCFLAGS:=-ffreestanding -nostartfiles -nostdlib -fPIE -O2 -Isrc/sysroot/usr/include
+MODULE_LINKER_SCRIPT:=$(LINKER_SRC_DIR)/module.ld
 
 #### lib ####
 # todo: shared libraries
-# c sources
-LIB_OBJS=$(patsubst %.c,%.o,$(wildcard $(LIB_SRC_DIR)/*.c))
-# source path -> build path
+LIB_OBJS:=$(patsubst %.c,%.o,$(wildcard $(LIB_SRC_DIR)/*.c))
 LIB_OBJS:=$(patsubst $(LIB_SRC_DIR)/%,$(LIB_BUILD_DIR)/%,$(LIB_OBJS))
-LIB_HEADERS = $(wildcard $(SYSROOT_SRC_DIR)/usr/include/sys/*.h $(SYSROOT_SRC_DIR)/usr/include/sys/*/*.h)
+LIB_HEADERS:=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/sys/*.h $(SYSROOT_SRC_DIR)/usr/include/sys/*/*.h)
+
+#### libc ####
+# todo: shared libraries
+LIBC_OBJS:=$(patsubst %.c,%.o,$(wildcard $(LIBC_SRC_DIR)/*.c))
+LIBC_OBJS:=$(patsubst $(LIBC_SRC_DIR)/%,$(LIBC_BUILD_DIR)/%,$(LIBC_OBJS))
+LIBC_HEADERS:=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/*.h)
 
 all: $(BIN_DIR)/beans.iso
 
 debug: KCFLAGS:=$(filter-out -O2,$(KCFLAGS))
 debug: KCFLAGS+=-g
-debug: $(BIN_DIR)/beans.iso
+debug: KMODCFLAGS:=$(filter-out -O2,$(KMODCFLAGS))
+debug: KMODCFLAGS+=-g
+debug: all
 
 # directories
-$(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNELASM_BUILD_DIR)
+# todo: this is kinda terrible
+$(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNEL_ASM_BUILD_DIR)
 $(KERNEL_BUILD_DIR):
-	@mkdir -p $(KERNEL_BUILD_DIR)
-$(KERNELASM_BUILD_DIR):
-	@mkdir -p $(KERNELASM_BUILD_DIR)
+	@mkdir -p $@
+$(KERNEL_ASM_BUILD_DIR):
+	@mkdir -p $@
 
-$(KERNELMOD_OBJS): | $(KERNELMOD_BUILD_DIR)
-$(KERNELMOD_BUILD_DIR):
-	@mkdir -p $(KERNELMOD_BUILD_DIR)
+$(KERNEL_LIB_OBJS): | $(KERNEL_LIB_BUILD_DIR)
+$(KERNEL_LIB_BUILD_DIR):
+	@mkdir -p $@
+
+$(KERNEL_MOD_OBJS): | $(KERNEL_MOD_BUILD_DIR)
+$(KERNEL_MODS): | $(KERNEL_MOD_BUILD_DIR)
+$(KERNEL_MOD_BUILD_DIR):
+	@mkdir -p $@
 
 $(LIB_OBJS): | $(LIB_BUILD_DIR)
 $(LIB_BUILD_DIR):
-	@mkdir -p $(LIB_BUILD_DIR)
+	@mkdir -p $@
 
-$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(KERNEL_HEADERS)
-	${CC} -c $< -o $@ $(KCFLAGS)
+$(LIBC_OBJS): | $(LIBC_BUILD_DIR)
+$(LIBC_BUILD_DIR):
+	@mkdir -p $@
 
-$(KERNELASM_BUILD_DIR)/%.o: $(KERNELASM_SRC_DIR)/%.S
+$(BIN_DIR)/beans: | $(BIN_DIR)
+$(BIN_DIR):
+	@mkdir -p $@
+
+$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
+	${CC} $(KCFLAGS) -c $< -o $@
+
+$(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.S
 	${AS} $< -o $@
 
-$(KERNELMOD_BUILD_DIR)/%.o: $(KERNELMOD_SRC_DIR)/%.c
-	${CC} $(KMODCFLAGS) -o $@ -c $<
+$(KERNEL_ASM_BUILD_DIR)/%.o: $(KERNEL_ASM_SRC_DIR)/%.S
+	${AS} $< -o $@
 
-# ah, make sure not to use -c which skips linking
-$(KERNELMOD_BUILD_DIR)/%.mod: $(KERNEL_OBJS) $(LIB_OBJS) $(KERNELMOD_BUILD_DIR)/%.o
-	${CC} -T $(MODULE_LINKER_SCRIPT) $(KMODCFLAGS) -o $@ $<
+$(KERNEL_LIB_BUILD_DIR)/%.o: $(KERNEL_LIB_SRC_DIR)/%.c
+	${CC} $(KCFLAGS) -c $< -o $@
 
-$(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c $(LIB_HEADERS)
-	${CC} $(KCFLAGS) -o $@ $<
+$(KERNEL_LIB_BUILD_DIR)/%.o: $(KERNEL_LIB_SRC_DIR)/%.S
+	$(error here)
+	${AS} $< -o $@
 
-$(BIN_DIR)/beans.bin: $(KERNEL_OBJS) $(LIB_OBJS)
-	@mkdir -p $(BIN_DIR)
+$(KERNEL_MOD_BUILD_DIR)/%.o: $(KERNEL_MOD_SRC_DIR)/%.c
+	${CC} $(KMODCFLAGS) -c $< -o $@
+
+# todo: this is a bit of a mess rn lol
+$(KERNEL_MOD_BUILD_DIR)/%.ko: $(KERNEL_MOD_BUILD_DIR)/%.o $(KERNEL_LIB_OBJS)
+	${CC} -T $(MODULE_LINKER_SCRIPT) $(KMODCFLAGS) $< -o $@ $(KERNEL_LIB_OBJS)
+
+$(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c
+	${CC} $(KCFLAGS) -c $< -o $@
+
+$(LIBC_BUILD_DIR)/%.o: $(LIBC_SRC_DIR)/%.c
+	${CC} $(KCFLAGS) -c $< -o $@
+
+$(BIN_DIR)/beans: $(KERNEL_OBJS) $(KERNEL_LIB_OBJS) $(LIB_OBJS)
 	${CC} -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
 
-check: $(BIN_DIR)/beans.bin
-	grub-file --is-x86-multiboot $(BIN_DIR)/beans.bin
+check: $(BIN_DIR)/beans
+	grub-file --is-x86-multiboot $(BIN_DIR)/beans
 
-$(BIN_DIR)/beans.iso: check $(KERNELMOD_OBJS)
+$(BIN_DIR)/beans.iso: check $(KERNEL_MODS)
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
 	mkdir -p $(ISO_DIR)/modules
-	cp $(BIN_DIR)/beans.bin $(ISO_DIR)/boot/beans.bin
+	cp $(BIN_DIR)/beans $(ISO_DIR)/boot/beans
 	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
-	cp $(KERNELMOD_BUILD_DIR)/*.mod $(ISO_DIR)/modules
+	cp $(KERNEL_MOD_BUILD_DIR)/*.ko $(ISO_DIR)/modules
 	grub-mkrescue -o $(BIN_DIR)/beans.iso $(ISO_DIR)
 
+.PHONY: run
 run: $(BIN_DIR)/beans.iso
 	qemu-system-i386 -serial stdio -cdrom $(BIN_DIR)/beans.iso
 
+.PHONY: gdb
 gdb: debug
-	$(OBJCOPY) --only-keep-debug $(BIN_DIR)/beans.bin $(BIN_DIR)/beans.sym
-	$(OBJCOPY) --strip-debug $(BIN_DIR)/beans.bin
+	$(OBJCOPY) --only-keep-debug $(BIN_DIR)/beans $(BIN_DIR)/beans.sym
+	$(OBJCOPY) --strip-debug $(BIN_DIR)/beans
 	qemu-system-i386 -s -S -serial stdio -cdrom $(BIN_DIR)/beans.iso
 
 .PHONY: clean
