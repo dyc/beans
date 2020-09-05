@@ -3,24 +3,7 @@ OUTPUT_FORMAT(binary)
 SECTIONS {
   . = 0x7c00;
 
-  .text BLOCK(4K) : ALIGN(4K) {
-    *(.text)
-  }
-
-  .rodata BLOCK(4K) : ALIGN(4K) {
-    *(.rodata)
-  }
-
-  .data BLOCK(4K) : ALIGN(4K) {
-    *(.data)
-  }
-
-  .bss BLOCK(4K) : ALIGN(4K) {
-    *(COMMON)
-    *(.bss)
-  }
-
-  /DISCARD/ : {
-    *(.comment)
+  .text : {
+    *(.text .rodata .data .bss)
   }
 }
