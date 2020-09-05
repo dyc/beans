@@ -1,8 +1,3 @@
-# taken from https://wiki.osdev.org/Bare_Bones
-# which has lots of useful explanations
-
-# constants for multiboot header
-# https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Header-magic-fields
 .set ALIGN,    1<<0
 .set MEMINFO,  1<<1
 .set FLAGS,    ALIGN | MEMINFO

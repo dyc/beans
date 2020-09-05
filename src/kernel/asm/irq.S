@@ -9,7 +9,7 @@
     jmp irq_handler_common
 .endm
 
-# remap our IRQs to start at 0x20
+// remap our IRQs to start at 0x20
 irq_handler_start 32
 irq_handler_start 33
 irq_handler_start 34
@@ -32,10 +32,9 @@ irq_handler_start 47
 
 irq_handler_common:
   pusha
-  # save segment registers
-  # and load kernel data segment
-  # it seems like ss is saved by control unit
-  # https://www.oreilly.com/library/view/understanding-the-linux/0596005652/ch04s02.html#understandlk-CHP-4-SECT-2.4
+  // save segment registers
+  // and load kernel data segment
+  // it seems like ss is saved by control unit
   push %ds
   push %es
   push %fs
@@ -57,5 +56,5 @@ irq_handler_common:
   pop %ds
   popa
 
-  add $8, %esp  # error code and IRQ num
+  add $8, %esp  // error code and IRQ num
   iret

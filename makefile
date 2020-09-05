@@ -1,11 +1,13 @@
 PREFIX:=/usr/local/cross
 AS:=$(PREFIX)/bin/i686-elf-as
 CC:=$(PREFIX)/bin/i686-elf-gcc
+LD:=$(PREFIX)/bin/i686-elf-ld
 OBJCOPY:=$(PREFIX)/bin/i686-elf-objcopy
 
 BUILD_DIR:=build
 BIN_DIR:=$(BUILD_DIR)/bin
 ISO_DIR:=$(BUILD_DIR)/iso
+BOOT_BUILD_DIR:=$(BUILD_DIR)/boot
 KERNEL_BUILD_DIR:=$(BUILD_DIR)/kernel
 KERNEL_ASM_BUILD_DIR:=$(KERNEL_BUILD_DIR)/asm
 KERNEL_LIB_BUILD_DIR:=$(KERNEL_BUILD_DIR)/lib
@@ -26,6 +28,9 @@ LINKER_SRC_DIR:=$(SRC_DIR)/linker
 
 # keep intermediates on fail
 .SECONDARY:
+
+#### bootloader ####
+BOOT_LINKER_SCRIPT=$(LINKER_SRC_DIR)/boot.ld
 
 #### kernel ####
 # todo: doesn't seem like i686-elf-gcc has -nostdlib or -nostartfiles...
@@ -88,6 +93,10 @@ debug: all
 
 # directories
 # todo: this is kinda terrible
+$(BOOT_BUILD_DIR)/boot.o: | $(BOOT_BUILD_DIR)
+$(BOOT_BUILD_DIR):
+	@mkdir -p $@
+
 $(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNEL_ASM_BUILD_DIR)
 $(KERNEL_BUILD_DIR):
 	@mkdir -p $@
@@ -116,36 +125,42 @@ $(BIN_DIR):
 	@mkdir -p $@
 
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
-	${CC} $(KCFLAGS) -c $< -o $@
+	$(CC) $(KCFLAGS) -c $< -o $@
 
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.S
-	${AS} $< -o $@
+	$(AS) $< -o $@
 
 $(KERNEL_ASM_BUILD_DIR)/%.o: $(KERNEL_ASM_SRC_DIR)/%.S
-	${AS} $< -o $@
+	$(AS) $< -o $@
 
 $(KERNEL_LIB_BUILD_DIR)/%.o: $(KERNEL_LIB_SRC_DIR)/%.c
-	${CC} $(KCFLAGS) -c $< -o $@
+	$(CC) $(KCFLAGS) -c $< -o $@
 
 $(KERNEL_LIB_BUILD_DIR)/%.o: $(KERNEL_LIB_SRC_DIR)/%.S
 	$(error here)
-	${AS} $< -o $@
+	$(AS) $< -o $@
 
 $(KERNEL_MOD_BUILD_DIR)/%.o: $(KERNEL_MOD_SRC_DIR)/%.c
-	${CC} $(KMODCFLAGS) -c $< -o $@
+	$(CC) $(KMODCFLAGS) -c $< -o $@
 
 # todo: this is a bit of a mess rn lol
 $(KERNEL_MOD_BUILD_DIR)/%.ko: $(KERNEL_MOD_BUILD_DIR)/%.o $(KERNEL_LIB_OBJS)
-	${CC} -T $(MODULE_LINKER_SCRIPT) $(KMODCFLAGS) $< -o $@ $(KERNEL_LIB_OBJS)
+	$(CC) -T $(MODULE_LINKER_SCRIPT) $(KMODCFLAGS) $< -o $@ $(KERNEL_LIB_OBJS)
 
 $(LIB_BUILD_DIR)/%.o: $(LIB_SRC_DIR)/%.c
-	${CC} $(KCFLAGS) -c $< -o $@
+	$(CC) $(KCFLAGS) -c $< -o $@
 
 $(LIBC_BUILD_DIR)/%.o: $(LIBC_SRC_DIR)/%.c
-	${CC} $(KCFLAGS) -c $< -o $@
+	$(CC) $(KCFLAGS) -c $< -o $@
 
 $(BIN_DIR)/beans: $(KERNEL_OBJS) $(KERNEL_LIB_OBJS) $(LIB_OBJS)
-	${CC} -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
+	$(CC) -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
+
+$(BOOT_BUILD_DIR)/boot.o: $(BOOT_SRC_DIR)/boot.S
+	$(AS) $< -o $@
+
+$(BOOT_BUILD_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o
+	$(LD) -T $(BOOT_LINKER_SCRIPT) -o $@ $^
 
 check: $(BIN_DIR)/beans
 	grub-file --is-x86-multiboot $(BIN_DIR)/beans

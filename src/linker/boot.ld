@@ -1,10 +1,9 @@
 ENTRY(_start)
+OUTPUT_FORMAT(binary)
 SECTIONS {
-  . = 1M;
+  . = 0x7c00;
 
-  /* multiboot header first */
   .text BLOCK(4K) : ALIGN(4K) {
-    *(.multiboot)
     *(.text)
   }
 
@@ -19,5 +18,9 @@ SECTIONS {
   .bss BLOCK(4K) : ALIGN(4K) {
     *(COMMON)
     *(.bss)
+  }
+
+  /DISCARD/ : {
+    *(.comment)
   }
 }
