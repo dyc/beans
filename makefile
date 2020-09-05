@@ -121,6 +121,7 @@ $(LIBC_BUILD_DIR):
 	@mkdir -p $@
 
 $(BIN_DIR)/beans: | $(BIN_DIR)
+$(BIN_DIR)/boot: | $(BIN_DIR)
 $(BIN_DIR):
 	@mkdir -p $@
 
@@ -159,17 +160,17 @@ $(BIN_DIR)/beans: $(KERNEL_OBJS) $(KERNEL_LIB_OBJS) $(LIB_OBJS)
 $(BOOT_BUILD_DIR)/boot.o: $(BOOT_SRC_DIR)/boot.S
 	$(AS) $< -o $@
 
-$(BOOT_BUILD_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o
+$(BIN_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o
 	$(LD) -T $(BOOT_LINKER_SCRIPT) -o $@ $^
 
-check: $(BIN_DIR)/beans
-	grub-file --is-x86-multiboot $(BIN_DIR)/beans
+checkboot: $(BIN_DIR)/boot
+	grub-file --is-x86-multiboot $(BIN_DIR)/boot
 
-$(BIN_DIR)/beans.iso: check $(KERNEL_MODS)
+$(BIN_DIR)/beans.iso: checkboot $(BIN_DIR)/beans $(KERNEL_MODS)
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
 	mkdir -p $(ISO_DIR)/modules
-	cp $(BIN_DIR)/beans $(ISO_DIR)/boot/beans
+	cp $(BIN_DIR)/boot $(ISO_DIR)/boot/boot
 	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
 	cp $(KERNEL_MOD_BUILD_DIR)/*.ko $(ISO_DIR)/modules
 	grub-mkrescue -o $(BIN_DIR)/beans.iso $(ISO_DIR)
