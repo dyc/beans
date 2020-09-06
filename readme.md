@@ -124,6 +124,10 @@ _debugger debugging_
 - check supported architectures:
   - (gdb) set arch debug 1
   - (gdb) set architecture <tab> # should show lots of stuff (200 for us)
+    - this [doesn't seem to support real mode assembly](https://sourceware.org/bugzilla/show_bug.cgi?id=22869)
+      any more, e.g. `set architecture i8086; break *0x7c00; layout asm`
+      still shows 32 bit code :-(
+    - ah, our good friends at so have come up with a [fix](https://stackoverflow.com/questions/32955887/how-to-disassemble-16-bit-x86-boot-sector-code-in-gdb-with-x-i-pc-it-gets-tr)
   - (gdb) set gnutarget <tab> # should show lots of stuff (200 for us)
   - (gdb) show configuration
   - remember, we want to load target: `file ./build/bin/beans`
