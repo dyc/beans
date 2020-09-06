@@ -115,8 +115,14 @@ make gdb # will output symbols in build/bin/beans.sym
 (gdb) print *loopy
 (gdb) x/4bx <whatever is in loopy->mod_start> # gdb can't examine this memory
 (gdb) stepi # until in the module
-(gdb) display/i $pc # should see our loopy jmps
+(gdb) x/i $pc # should see our loopy jmps
 ...
+```
+
+there are some convenience scripts in `scripts/gdb`, e.g. for the bootloader:
+
+```sh
+gdb -command scripts/gdb/boot
 ```
 
 _debugger debugging_
