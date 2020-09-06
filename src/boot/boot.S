@@ -1,3 +1,5 @@
+// note to self: dont forget to das as 16 bit:
+// i686-elf-objdump -m i386 -M addr16,data16 -b binary -D build/bin/boot
 .code16
 .global _start
 _start:
