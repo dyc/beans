@@ -11,32 +11,101 @@ _start:
   // set up seg regs
   mov $0x7c00, %ax
   mov %ax, %ds
-
   // 256 byte stack (bootloader occupies 0x7c00 - 0x7e00)
   mov $0x7e00, %ax
   mov %ax, %ss
   mov $0x7f00, %ax
   mov %ax, %sp
+  // e820 mmap will be directed here
+  // (bottom of conventional memory, i.e. first mb)
+  mov $0x500, %ax
+  mov %ax, %es
 
-  // get available memory ("conventional memory")
-  // below 0x0A0000 (640kb)
-  // error status returned in CF so clear it
+  // get available memory below 0x0A0000 (640kb)
+  // error status returned in cf so clear it
   clc
   // returns kb from 0 (ivt and bda in first ~1kb)
   // in %ax (probably 639, ~1kb for ebda)
   int $0x12
   // stop if error
   jc hang
-  mov %ax, (mb_mem_lower)
+  mov %ax, (lower_mem)
+
+  // find mmap
+  call e820
 
   cli
   jmp hang
 
+e820:
+  xor %ebx, %ebx
+
+e820_next:
+  // magic ("smap")
+  mov $0x534d4150, %edx
+  mov $0xe820, %eax
+  // let's play along with acpi 3.0 compliance
+  movl $0x1, %es:20(%di)
+  // request 24 bytes
+  mov $0x24, %ecx
+
+  int $0x15
+
+  // check cf, magic in eax
+  // technically some bioses can indicate
+  // doneness with cf instead of ebx :-o
+  jc e820_fail
+  mov $0x534d4150, %edx
+  cmp %edx, %eax
+  jne e820_fail
+
+  // doneness
+  test %ebx, %ebx
+  je e820_done
+
+  // length returned in cx
+  jcxz e820_next_or_done
+
+  // if we got 20 bytes, try ingest
+  cmp $20, %cl
+  je e820_ingest
+
+  // got 24 bytes (acpi 3.0), check skip bit
+  testb $1, %es:20(%di)
+  je e820_next_or_done
+
+e820_ingest:
+  mov %es:8(%di), %ecx
+  or %es:12(%di), %ecx
+  jz e820_next_or_done
+  // track number of entries
+  incb e820_count
+  // prepare for next entry
+  // most likely 20 byte entries but
+  // inc by 24 fOR cOmPatiBIliTY
+  add $24, %di
+
+e820_next_or_done:
+  test %ebx, %ebx
+  jne e820_next
+
+e820_done:
+  clc
+  ret
+
+e820_fail:
+  stc
+  ret
+
 hang:
   jmp hang
 
-.global mb_mem_lower
-mb_mem_lower:
+.global e820_count
+e820_count:
+  .byte 0
+
+.global lower_mem
+lower_mem:
   .byte 0
   .byte 0
 

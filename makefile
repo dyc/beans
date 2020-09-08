@@ -33,7 +33,6 @@ LINKER_SRC_DIR:=$(SRC_DIR)/linker
 BOOT_LINKER_SCRIPT=$(LINKER_SRC_DIR)/boot.ld
 
 #### kernel ####
-# todo: doesn't seem like i686-elf-gcc has -nostdlib or -nostartfiles...
 KCFLAGS:=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
 CRTI_OBJ:=$(KERNEL_ASM_BUILD_DIR)/crti.o
 CRTN_OBJ:=$(KERNEL_ASM_BUILD_DIR)/crtn.o
