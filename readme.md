@@ -119,7 +119,7 @@ make gdb # will output symbols in build/bin/beans.sym
 ...
 ```
 
-there are some convenience scripts in `scripts/gdb`, e.g. for the bootloader:
+there are some convenience scripts in `scripts/gdb`, e.g.
 
 ```sh
 gdb -command scripts/gdb/boot
