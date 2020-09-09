@@ -16,7 +16,7 @@ _start:
   mov $0x7c00, %ax
   mov %ax, %sp
   // e820 mmap will be directed here
-  // (bottom of conventional memory, i.e. first mb)
+  // (bottom of conventional memory, which is the first mb)
   mov $0x500, %ax
   mov %ax, %es
 
@@ -38,6 +38,7 @@ _start:
 
 e820:
   xor %ebx, %ebx
+  xor %di, %di
 
 e820_next:
   // magic ("smap")
