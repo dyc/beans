@@ -9,12 +9,11 @@ _start:
   ljmp $0x0000, $0x7c05
 
   // set up seg regs
-  mov $0x7c00, %ax
+  xor %ax, %ax
   mov %ax, %ds
-  // 256 byte stack (bootloader occupies 0x7c00 - 0x7e00)
-  mov $0x7e00, %ax
   mov %ax, %ss
-  mov $0x7f00, %ax
+  // big ol stack (bootloader occupies 0x7c00 - 0x7e00)
+  mov $0x7c00, %ax
   mov %ax, %sp
   // e820 mmap will be directed here
   // (bottom of conventional memory, i.e. first mb)
