@@ -7,7 +7,6 @@ _start:
   // real mode, cs:ip = (cs << 4) + ip
   // set cs to next instruction (ljmp is 5 bytes)
   ljmp $0x0000, $0x7c05
-
   // set up seg regs
   xor %ax, %ax
   mov %ax, %ds
@@ -15,11 +14,10 @@ _start:
   // big ol stack (bootloader occupies 0x7c00 - 0x7e00)
   mov $0x7c00, %ax
   mov %ax, %sp
-  // e820 mmap will be directed here
+  // e820 mmap will be directed here (0x500 since es is seg reg)
   // (bottom of conventional memory, which is the first mb)
-  mov $0x500, %ax
+  mov $0x50, %ax
   mov %ax, %es
-
   // get available memory below 0x0A0000 (640kb)
   // error status returned in cf so clear it
   clc
@@ -29,16 +27,40 @@ _start:
   // stop if error
   jc hang
   mov %ax, (lower_mem)
-
   // find mmap
-  call e820
+  call e820_first
+  jc hang
 
+  // todo: keep booting here
   cli
+  mov $0xdead, %eax
   jmp hang
 
-e820:
+// if first iteration fails then e820 isn't supported
+// and we should indicate fail on return
+e820_first:
   xor %ebx, %ebx
   xor %di, %di
+  // magic ("smap")
+  mov $0x534d4150, %edx
+  mov $0xe820, %eax
+  // let's play along with acpi 3.0 compliance
+  movl $0x1, %es:20(%di)
+  // request 24 bytes
+  mov $0x24, %ecx
+  int $0x15
+  jc e820_fail
+  mov $0x534d4150, %edx
+  cmp %edx, %eax
+  jne e820_fail
+  // check cf, magic in eax, nonzero ebx for success
+  jc e820_fail
+  mov $0x534d4150, %edx
+  cmp %edx, %eax
+  jne e820_fail
+  test %ebx, %ebx
+  je e820_fail
+  jmp e820_maybe_ingest
 
 e820_next:
   // magic ("smap")
@@ -48,28 +70,18 @@ e820_next:
   movl $0x1, %es:20(%di)
   // request 24 bytes
   mov $0x24, %ecx
-
   int $0x15
-
-  // check cf, magic in eax
-  // technically some bioses can indicate
-  // doneness with cf instead of ebx :-o
-  jc e820_fail
-  mov $0x534d4150, %edx
-  cmp %edx, %eax
-  jne e820_fail
-
   // doneness
+  jc e820_done
   test %ebx, %ebx
   je e820_done
 
+e820_maybe_ingest:
   // length returned in cx
   jcxz e820_next_or_done
-
   // if we got 20 bytes, try ingest
   cmp $20, %cl
   je e820_ingest
-
   // got 24 bytes (acpi 3.0), check skip bit
   testb $1, %es:20(%di)
   je e820_next_or_done
