@@ -16,6 +16,7 @@ _start:
   mov %ax, %sp
   // e820 mmap will be directed here (0x500 since es is seg reg)
   // (bottom of conventional memory, which is the first mb)
+  // x/120xb 0x500 to inspect
   mov $0x50, %ax
   mov %ax, %es
   // get available memory below 0x0A0000 (640kb)
