@@ -47,7 +47,7 @@ e820_first:
   // let's play along with acpi 3.0 compliance
   movl $0x1, %es:20(%di)
   // request 24 bytes
-  mov $0x24, %ecx
+  mov $24, %ecx
   int $0x15
   jc e820_fail
   mov $0x534d4150, %edx
@@ -63,13 +63,10 @@ e820_first:
   jmp e820_maybe_ingest
 
 e820_next:
-  // magic ("smap")
   mov $0x534d4150, %edx
   mov $0xe820, %eax
-  // let's play along with acpi 3.0 compliance
   movl $0x1, %es:20(%di)
-  // request 24 bytes
-  mov $0x24, %ecx
+  mov $24, %ecx
   int $0x15
   // doneness
   jc e820_done
