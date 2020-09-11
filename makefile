@@ -30,6 +30,7 @@ LINKER_SRC_DIR:=$(SRC_DIR)/linker
 .SECONDARY:
 
 #### bootloader ####
+MBR_LINKER_SCRIPT=$(LINKER_SRC_DIR)/mbr.ld
 BOOT_LINKER_SCRIPT=$(LINKER_SRC_DIR)/boot.ld
 
 #### kernel ####
@@ -92,6 +93,7 @@ debug: all
 
 # directories
 # todo: this is kinda terrible
+$(BOOT_BUILD_DIR)/mbr.o: | $(BOOT_BUILD_DIR)
 $(BOOT_BUILD_DIR)/boot.o: | $(BOOT_BUILD_DIR)
 $(BOOT_BUILD_DIR):
 	@mkdir -p $@
@@ -119,8 +121,9 @@ $(LIBC_OBJS): | $(LIBC_BUILD_DIR)
 $(LIBC_BUILD_DIR):
 	@mkdir -p $@
 
-$(BIN_DIR)/beans: | $(BIN_DIR)
+$(BIN_DIR)/mbr: | $(BIN_DIR)
 $(BIN_DIR)/boot: | $(BIN_DIR)
+$(BIN_DIR)/beans: | $(BIN_DIR)
 $(BIN_DIR):
 	@mkdir -p $@
 
@@ -156,8 +159,14 @@ $(LIBC_BUILD_DIR)/%.o: $(LIBC_SRC_DIR)/%.c
 $(BIN_DIR)/beans: $(KERNEL_OBJS) $(KERNEL_LIB_OBJS) $(LIB_OBJS)
 	$(CC) -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
 
+$(BOOT_BUILD_DIR)/mbr.o: $(BOOT_SRC_DIR)/mbr.S
+	$(AS) $< -o $@
+
 $(BOOT_BUILD_DIR)/boot.o: $(BOOT_SRC_DIR)/boot.S
 	$(AS) $< -o $@
+
+$(BIN_DIR)/mbr: $(BOOT_BUILD_DIR)/mbr.o
+	$(LD) -T $(MBR_LINKER_SCRIPT) -o $@ $^
 
 $(BIN_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o
 	$(LD) -T $(BOOT_LINKER_SCRIPT) -o $@ $^
@@ -165,14 +174,19 @@ $(BIN_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o
 checkboot: $(BIN_DIR)/boot
 	grub-file --is-x86-multiboot $(BIN_DIR)/boot
 
-$(BIN_DIR)/beans.iso: checkboot $(BIN_DIR)/beans $(KERNEL_MODS)
+# todo: started setting up for boot-from-cd-floppy and decided to do disk boot instead.
+# change this to build simple disk image and load mbr instead of boot
+$(BIN_DIR)/beans.iso: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_MODS)
 	rm -rf $(ISO_DIR)
-	mkdir -p $(ISO_DIR)/boot/grub
+	mkdir -p $(ISO_DIR)/boot
 	mkdir -p $(ISO_DIR)/modules
 	cp $(BIN_DIR)/boot $(ISO_DIR)/boot/boot
-	cp $(BOOT_SRC_DIR)/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
 	cp $(KERNEL_MOD_BUILD_DIR)/*.ko $(ISO_DIR)/modules
-	grub-mkrescue -o $(BIN_DIR)/beans.iso $(ISO_DIR)
+	xorriso -as mkisofs -r \
+		-b boot/boot \
+		-c boot/boot.catalog \
+		-o $(BIN_DIR)/beans.iso \
+		$(ISO_DIR)
 
 .PHONY: run
 run: $(BIN_DIR)/beans.iso

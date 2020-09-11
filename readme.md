@@ -73,25 +73,10 @@ sudo make install-gcc
 sudo make install-target-libgcc
 ```
 
-finally, we'll be building our boot images with grub:
+finally, we'll be building our boot image with xorriso:
 
 ```sh
-# grub needs xorriso and objconv
 brew install xorriso
-
-mkdir objconvbuild
-/usr/local/gcc-10.2.0/bin/g++-10.2 -o objconv -O2 src/*.cpp --prefix="$PREFIX"
-cp objconv "$PREFIX/bin"
-cd ..
-
-cd grub-2.04
-./autogen.sh
-# we had to make this 2-line patch to get 2.04 to build:
-# https://www.mail-archive.com/grub-devel@gnu.org/msg29007.html
-cd ..
-mkdir grubbuild
-cd grubbuild
-../grub-2.04/configure --prefix="$PREFIX" --target=$TARGET --disable-werror
 ```
 
 _macos debuggers_
