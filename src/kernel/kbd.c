@@ -11,7 +11,7 @@ static const uint8_t KEYBOARD_IRQ = 0x01;
 static const uint8_t KEYBOARD_PORT = 0x60;
 static const uint8_t KEYBOARD_PENDING = 0x64;
 
-static int keyboard_handler(struct irq_state* s) {
+static int keyboard_handler(struct irq_state *s) {
   IGNORE(s);
 
   if (inb(KEYBOARD_PENDING) & 0x01) {
@@ -24,6 +24,4 @@ static int keyboard_handler(struct irq_state* s) {
   return 1;
 }
 
-void keyboard_install() {
-  irq_install_handler(KEYBOARD_IRQ, keyboard_handler);
-}
+void keyboard_install() { irq_install_handler(KEYBOARD_IRQ, keyboard_handler); }

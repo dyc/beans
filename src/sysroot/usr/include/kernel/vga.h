@@ -27,4 +27,4 @@ extern const size_t VGA_HEIGHT;
 extern void vga_init();
 extern void vga_fg(enum vga_color c);
 extern void vga_bg(enum vga_color c);
-extern void vga_write(const char* s);
+extern void vga_write(const char *s);

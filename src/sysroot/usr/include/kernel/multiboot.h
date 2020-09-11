@@ -51,8 +51,8 @@ struct multiboot_info {
   uint32_t framebuffer_height;
   uint8_t framebuffer_bpp;
 #define MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED 0
-#define MULTIBOOT_FRAMEBUFFER_TYPE_RGB     1
-#define MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT     2
+#define MULTIBOOT_FRAMEBUFFER_TYPE_RGB 1
+#define MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT 2
   uint8_t framebuffer_type;
   union {
     struct {

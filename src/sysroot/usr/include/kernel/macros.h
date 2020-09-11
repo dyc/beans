@@ -1,3 +1,3 @@
 #pragma once
 
-#define IGNORE(x) (void) x
+#define IGNORE(x) (void)x

@@ -1,6 +1,6 @@
 #include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 struct idt_descriptor {
   uint16_t limit;
@@ -20,12 +20,8 @@ static struct {
   struct idt_entry entries[256];
 } idt __attribute__((used));
 
-void idt_set_gate(
-  size_t gate,
-  uint32_t offset,
-  uint16_t selector,
-  uint8_t flags
-) {
+void idt_set_gate(size_t gate, uint32_t offset, uint16_t selector,
+                  uint8_t flags) {
   idt.entries[gate].offset_low = offset & 0xFFFF;
   idt.entries[gate].offset_high = (offset >> 16) & 0xFFFF;
   idt.entries[gate].selector = selector;
@@ -37,12 +33,12 @@ extern void load_idt(uintptr_t);
 
 void idt_install() {
   idt.idtr.limit = sizeof(idt.entries) - 1;
-  idt.idtr.base = (uint32_t) &idt.entries[0];
+  idt.idtr.base = (uint32_t)&idt.entries[0];
 
   size_t n = sizeof(idt.entries) / sizeof(struct idt_entry);
   for (size_t i = 0; i < n; ++i) {
     idt_set_gate(i, 0, 0, 0);
   }
 
-  load_idt((uintptr_t) &idt.idtr);
+  load_idt((uintptr_t)&idt.idtr);
 }

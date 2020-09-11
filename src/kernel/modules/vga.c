@@ -21,19 +21,18 @@ static const short CURSOR_ENABLE_MASK = ~0x20;
 static const short CURSOR_MAX_SCANLINE = 0x0F;
 static uint16_t EMPTY_CELL;
 
-static uint16_t* buffer;
+static uint16_t *buffer;
 static size_t row;
 static size_t col;
 static enum vga_color fg;
 static enum vga_color bg;
 
-static inline uint16_t vga_cell(uint8_t uc, enum vga_color fg, enum vga_color bg) {
-  return (uint16_t) uc | (uint16_t) ((fg | (bg << 4)) << 8);
+static inline uint16_t vga_cell(uint8_t uc, enum vga_color fg,
+                                enum vga_color bg) {
+  return (uint16_t)uc | (uint16_t)((fg | (bg << 4)) << 8);
 }
 
-static inline size_t buffer_i(size_t x, size_t y) {
-  return y * VGA_WIDTH + x;
-}
+static inline size_t buffer_i(size_t x, size_t y) { return y * VGA_WIDTH + x; }
 
 static void putentryat(char c, size_t x, size_t y) {
   buffer[buffer_i(x, y)] = vga_cell(c, fg, bg);
@@ -87,22 +86,18 @@ void disable_cursor() {
 }
 
 void move_cursor(size_t x, size_t y) {
-  uint16_t i = (uint16_t) buffer_i(x, y);
+  uint16_t i = (uint16_t)buffer_i(x, y);
   outb(COMMAND_PORT, CURSOR_POS_HIGH);
   outb(DATA_PORT, (i >> 8));
   outb(COMMAND_PORT, CURSOR_POS_LOW);
   outb(DATA_PORT, i);
 }
 
-void vga_fg(enum vga_color c) {
-  fg = c;
-}
+void vga_fg(enum vga_color c) { fg = c; }
 
-void vga_bg(enum vga_color c) {
-  bg = c;
-}
+void vga_bg(enum vga_color c) { bg = c; }
 
-void vga_write(const char* s) {
+void vga_write(const char *s) {
   size_t len = strlen(s);
   for (size_t i = 0; i < len; ++i) {
     putchar(s[i]);
@@ -111,7 +106,7 @@ void vga_write(const char* s) {
 }
 
 void vga_init() {
-  buffer = (uint16_t*) VGA_TEXT_START;
+  buffer = (uint16_t *)VGA_TEXT_START;
   EMPTY_CELL = vga_cell(' ', VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
   row = 0;
   col = 0;
@@ -131,5 +126,6 @@ void vga_init() {
 
 void _module_init() {
   vga_init();
-  while(1);
+  while (1)
+    ;
 }

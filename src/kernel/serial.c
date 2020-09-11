@@ -17,36 +17,25 @@ static uint8_t DEFAULT_FIFO_CONFIG = 0xC7;
 static uint8_t DEFAULT_MODEM_CONFIG = 0x03;
 static uint8_t TRANSMIT_FIFO_EMPTY = 0x20;
 
-static inline short data_reg(enum serial_port p) {
-  return p;
-}
+static inline short data_reg(enum serial_port p) { return p; }
 
-static inline short intenable_reg(enum serial_port p) {
-  return p + 1;
-}
+static inline short intenable_reg(enum serial_port p) { return p + 1; }
 
-static inline short fifocontrol_reg(enum serial_port p) {
-  return p + 2;
-}
+static inline short fifocontrol_reg(enum serial_port p) { return p + 2; }
 
-static inline short linecontrol_reg(enum serial_port p) {
-  return p + 3;
-}
+static inline short linecontrol_reg(enum serial_port p) { return p + 3; }
 
-static inline short modemcontrol_reg(enum serial_port p) {
-  return p + 4;
-}
+static inline short modemcontrol_reg(enum serial_port p) { return p + 4; }
 
-static inline short linestatus_reg(enum serial_port p) {
-  return p + 5;
-}
+static inline short linestatus_reg(enum serial_port p) { return p + 5; }
 
 bool transmit_empty(enum serial_port p) {
   return inb(linestatus_reg(p)) & TRANSMIT_FIFO_EMPTY;
 }
 
 void transmit(enum serial_port p, char c) {
-  while (!transmit_empty(p));
+  while (!transmit_empty(p))
+    ;
   outb(data_reg(p), c);
 }
 
@@ -70,7 +59,7 @@ void serial_set_baud(enum serial_port p, unsigned short divisor) {
   outb(linecontrol_reg(p), prevline);
 }
 
-void serial_write(enum serial_port p, const char* s) {
+void serial_write(enum serial_port p, const char *s) {
   size_t len = strlen(s);
   for (size_t i = 0; i < len; ++i) {
     transmit(p, s[i]);

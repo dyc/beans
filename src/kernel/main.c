@@ -15,7 +15,7 @@ void timer_heartbeat(unsigned long t) {
   }
 }
 
-void kmain(struct multiboot_info* mb_info, uint32_t mb_magic) {
+void kmain(struct multiboot_info *mb_info, uint32_t mb_magic) {
   serial_enable(SERIAL_PORT_COM1);
   serial_write(SERIAL_PORT_COM1, "serial enabled\n");
 
@@ -36,7 +36,8 @@ void kmain(struct multiboot_info* mb_info, uint32_t mb_magic) {
     sprintf(scratchbuf, "eax: %d\n", mb_magic);
     serial_write(SERIAL_PORT_COM1, "multiboot magic check failed\n");
     serial_write(SERIAL_PORT_COM1, scratchbuf);
-    while(1);
+    while (1)
+      ;
   } else {
     serial_write(SERIAL_PORT_COM1, "multiboot magic seems ok\n");
   }
@@ -47,15 +48,16 @@ void kmain(struct multiboot_info* mb_info, uint32_t mb_magic) {
     for (size_t i = 0; i < mb_info->mods_count; ++i) {
       sprintf(scratchbuf, "mod @ %d\n", mb_info->mods_addr);
       serial_write(SERIAL_PORT_COM1, scratchbuf);
-      struct multiboot_module* mod = (struct multiboot_module*) mb_info->mods_addr;
-      ((void(*)(void)) mod->mod_start)();
+      struct multiboot_module *mod =
+          (struct multiboot_module *)mb_info->mods_addr;
+      ((void (*)(void))mod->mod_start)();
     }
   }
   serial_write(SERIAL_PORT_COM1, "finished loading modules\n");
 
   size_t kbdc = 0;
   char kbdbuf[8];
-  while(1) {
+  while (1) {
     if (kbdc == KEYBOARD_CURSOR) {
       asm("hlt");
       continue;
@@ -64,7 +66,7 @@ void kmain(struct multiboot_info* mb_info, uint32_t mb_magic) {
     size_t written = 0;
     bool wrap = KEYBOARD_CURSOR < kbdc;
     // write to end of buffer or to cursor, if wrap around
-    size_t n = wrap ? sizeof(KEYBOARD_BUFFER): KEYBOARD_CURSOR;
+    size_t n = wrap ? sizeof(KEYBOARD_BUFFER) : KEYBOARD_CURSOR;
     for (size_t i = kbdc; i < n; ++i) {
       kbdbuf[i - kbdc] = scancode(KEYBOARD_BUFFER[i]);
     }

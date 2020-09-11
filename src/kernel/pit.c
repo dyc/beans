@@ -15,13 +15,11 @@ static const uint8_t CHANNEL0_LOHI_STROBE = 0x34;
 
 static size_t divisor = 0xFFFFFFFF;
 static unsigned long t = 0;
-static void(*on_timer)(unsigned long);
+static void (*on_timer)(unsigned long);
 
-void pit_set_timer_cb(void(*cb)(unsigned long)) {
-  on_timer = cb;
-}
+void pit_set_timer_cb(void (*cb)(unsigned long)) { on_timer = cb; }
 
-static int pit_handler(struct irq_state* s) {
+static int pit_handler(struct irq_state *s) {
   IGNORE(s);
   ++t;
   if (on_timer) {
@@ -47,6 +45,4 @@ void pit_set_freq_hz(size_t hz) {
   outb(CHANNEL0_PORT, (divisor >> 8) & 0xFF);
 }
 
-void pit_install() {
-  irq_install_handler(PIT_IRQ, pit_handler);
-}
+void pit_install() { irq_install_handler(PIT_IRQ, pit_handler); }
