@@ -1,27 +1,30 @@
+// mbr should relocate itself and bring in a bootloader
+// from an active partition. in our simple system, we'll
+// just load the first (and presumably only) active partition
 .code16
-.global _start
-_start:
+.global mbr_start
+mbr_start:
   cli
-  // zero out seg regs
+  // zero seg regs
   xor %ax, %ax
   mov %ax, %ds
   mov %ax, %ss
   mov %ax, %sp
   mov %ax, %es
-.relocate:
-  // org 0x0600 (from linker script)
+relocate:
   // bios loads us at 0x7c00 so we need to
   // relocate and set up/flush cs:ip
+  // 0x0600 seems like a nice place to move to
+  // (location counter set in linker script)
+
   // words to move (we're 512 bytes)
   mov $0x0100, %cx
   mov $0x7c00, %si
   mov $0x0600, %di
   rep movsw
-  // cs:ip = (cs << 4) + ip
-  // set cs to next instruction (ljmp is 5 bytes)
-  ljmp $0x0, $(start)
+  ljmp $0x0, $(start_check_partition)
 
-start:
+start_check_partition:
   mov %dl, (drive_number)
   mov partition1, %bx
   mov $4, %cx
@@ -37,7 +40,7 @@ check_partition:
   // and fail hard if we don't find it
   jmp hang
 found_boot_partition:
-  movw %bx, (boot_partition)
+  mov %bx, (boot_partition)
   movw $0x7c00, (dap_dest_addr)
   // lba is at offset 0x08, put it into dap
   add $8, %bx
@@ -54,9 +57,8 @@ read_sector:
   mov $0x42, %ah
   int $0x13
   jnc boot
-  // else try again
+  // else reset disk and try again
   dec %cx
-  // reset disk
   xor %ah, %ah
   int $0x13
   jnc read_sector
@@ -82,7 +84,8 @@ drive_number:
 boot_partition:
   .byte 0
 
-dap: // disk address packet
+// disk address packet
+dap:
   // packet size
   .byte 0
   // reserved
@@ -100,7 +103,7 @@ dap_lba_ext:
   .word 0
 
 // partition table starts at offset 0x01be
-.skip 0x01be-(.-_start), 0
+.skip 0x01be-(.-mbr_start), 0
 
 partition1:
   .quad 0

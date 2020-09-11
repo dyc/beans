@@ -159,23 +159,12 @@ $(LIBC_BUILD_DIR)/%.o: $(LIBC_SRC_DIR)/%.c
 $(BIN_DIR)/beans: $(KERNEL_OBJS) $(KERNEL_LIB_OBJS) $(LIB_OBJS)
 	$(CC) -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
 
-$(BOOT_BUILD_DIR)/mbr.o: $(BOOT_SRC_DIR)/mbr.S
+$(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.S
 	$(AS) $< -o $@
 
-$(BOOT_BUILD_DIR)/boot.o: $(BOOT_SRC_DIR)/boot.S
-	$(AS) $< -o $@
+$(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
+	$(LD) -T $(LINKER_SRC_DIR)/$(@F).ld -o $@ $^
 
-$(BIN_DIR)/mbr: $(BOOT_BUILD_DIR)/mbr.o
-	$(LD) -T $(MBR_LINKER_SCRIPT) -o $@ $^
-
-$(BIN_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o
-	$(LD) -T $(BOOT_LINKER_SCRIPT) -o $@ $^
-
-checkboot: $(BIN_DIR)/boot
-	grub-file --is-x86-multiboot $(BIN_DIR)/boot
-
-# todo: started setting up for boot-from-cd-floppy and decided to do disk boot instead.
-# change this to build simple disk image and load mbr instead of boot
 $(BIN_DIR)/beans.iso: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_MODS)
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot
