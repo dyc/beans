@@ -200,10 +200,6 @@ $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_M
 	# fill to 1mb
 	dd if=/dev/zero bs=1 seek=512 count=1047552 >> $(BIN_DIR)/mbr.img
 	# make our final disk
-	# rn, generates something semisensical but likely corrupt? i see
-	# reasonable partition info (active first partition, correct start/end CHS)
-	# but i'm guessing that's just stuff inserted by fdisk and not
-	# read from our mbr table? idk
 	cat $(BIN_DIR)/mbr.img $(BIN_DIR)/fs.img > $(BIN_DIR)/beans.img
 	file $(BIN_DIR)/beans.img
 
