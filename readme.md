@@ -108,6 +108,8 @@ there are some convenience scripts in `scripts/gdb`, e.g.
 
 ```sh
 gdb -command scripts/gdb/boot
+# breaks at start of partition probing, in relocated mbr (offset from 0x600)
+gdb -command scripts/gdb/mbr
 ```
 
 _debugger debugging_
