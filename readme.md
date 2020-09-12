@@ -76,7 +76,7 @@ sudo make install-target-libgcc
 for now, the only supported boot medium is a disk image. `scripts/mkimg`
 (invoked as part of `make`) will create an 80mb single-partition fat32 image
 for this purpose. unfortunately, this will require an interactive `fdisk`
-session (see bolded):
+session (see bolded for what to input):
 
 <pre>
 + fdisk -e beans/build/bin/temp.img

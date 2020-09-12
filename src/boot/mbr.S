@@ -48,7 +48,9 @@ found_boot_partition:
   movl (%bx), %ebx
   mov %ebx, (dap_lba)
   // read one block
-  mov $1, (dap_blocks)
+  // todo: change this back to 1 block after we finish
+  // testing loadk
+  mov $2, (dap_blocks)
   // retry once
   mov $2, %cx
 read_sector:

@@ -16,6 +16,8 @@ dd if=/dev/zero of=${OUT}/temp.img count=${SECTORS} bs=${BLOCKSIZE}
 # todo: find a non-interactive version of this
 fdisk -e ${OUT}/temp.img
 # cut out mbr, rest is fs
+# todo: why is this 2047 blocks? accounting for mbr?
+# also why partition after 1mb? ...should partition offset be 2048?
 dd if=${OUT}/temp.img of=${OUT}/fs.img bs=${BLOCKSIZE} skip=2047
 rm ${OUT}/temp.img
 
