@@ -79,13 +79,13 @@ for this purpose. unfortunately, this will require an interactive `fdisk`
 session (see bolded):
 
 <pre>
-+ fdisk -e /path/to/beans/build/bin/temp.img
++ fdisk -e beans/build/bin/temp.img
 fdisk: could not open MBR file /usr/standalone/i386/boot0: No such file or directory
 The signature for this MBR is invalid.
 Would you like to initialize the partition table? [y] <b>y</b>
 Enter 'help' for information
 fdisk:*1> <b>disk</b>
-Disk: /path/to/beans/build/bin/temp.img       geometry: 650/4/63 [163840 sectors]
+Disk: beans/build/bin/temp.img       geometry: 650/4/63 [163840 sectors]
 Change disk geometry? [n] <b>n</b>
 fdisk:*1> <b>edit 1</b>
          Starting       Ending

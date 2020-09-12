@@ -32,10 +32,46 @@ _start:
   call e820_first
   jc hang
 
-  // todo: keep booting here
   cli
-  mov $0xdead, %eax
-  jmp hang
+
+  // fast a20 enable, if necessary
+  in $0x92, %al
+  testb $2, %al
+  jnz no92
+  or $2, %al
+  and $0xfe, %al
+  out %al, $0x92
+no92:
+
+  // load gdt
+  xor %eax, %eax
+  mov %ds, %ax
+  shl $4, %eax
+  add $gdt_start, %eax
+  // init offset and size in descriptor
+  mov %eax, gdt_descriptor + 2
+  mov $gdt_end, %eax
+  sub $gdt_start, %eax
+  mov %ax, gdt_descriptor
+  lgdtw gdt_descriptor
+
+  // protected mode
+  // do after gdt with no interrupts
+  mov %cr0, %eax
+  or $1, %al
+  mov %eax, %cr0
+
+  // flush data segregs
+  mov $0x10, %ax
+  mov %ax, %ds
+  mov %ax, %es
+  mov %ax, %fs
+  mov %ax, %gs
+  mov %ax, %ss
+
+.global loadk
+  // flush code segreg
+  ljmp $0x08, $loadk
 
 // if first iteration fails then e820 isn't supported
 // and we should indicate fail on return
@@ -118,6 +154,39 @@ e820_count:
 lower_mem:
   .byte 0
   .byte 0
+
+gdt_descriptor:
+  .word 0
+  .long 0
+
+gdt_start:
+  // first entry unused
+  .quad 0
+  // code descriptor
+  // limit, bits 0-15
+  .word 0xffff
+  // base, bits 0-15
+  .word 0
+  // base, bits 16-23
+  .byte 0
+  // access: read-enabled kcode segment
+  .byte 0x9a
+  // flags in high 4:
+  // - granularity=1: limit is 4kb pages
+  // - size=1: 32 bit operands
+  // limit, bits 16-20 in low 4
+  .byte 0xcf
+  // base, bits 24-31
+  .byte 0
+  // data descriptor
+  .word 0xffff
+  .word 0
+  .byte 0
+  // access: write-enabled kdata segment
+  .byte 0x92
+  .byte 0xcf
+  .byte 0
+gdt_end:
 
 .skip 510-(.-_start), 0
 .word 0xaa55

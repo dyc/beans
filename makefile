@@ -158,13 +158,22 @@ $(LIBC_BUILD_DIR)/%.o: $(LIBC_SRC_DIR)/%.c
 $(BIN_DIR)/beans: $(KERNEL_OBJS) $(KERNEL_LIB_OBJS) $(LIB_OBJS)
 	$(CC) -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
 
+$(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.c
+	# small pls
+	$(CC) -c -Os $< -o $@
+
 $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.S
 	$(AS) $< -o $@
 
 $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -T $(LINKER_SRC_DIR)/$(@F).ld -o $@ $^
 
-$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_MODS)
+# todo: fold this into a generalized boot target if possible
+$(BIN_DIR)/boot2: $(BOOT_BUILD_DIR)/boot.o $(BOOT_BUILD_DIR)/loadk.o
+	$(LD) -T $(LINKER_SRC_DIR)/boot.ld -o $@ $^
+
+# todo: change this back to using boot once we get rid of boot2
+$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot2 $(BIN_DIR)/beans $(KERNEL_MODS)
 	./scripts/mkimg $(BIN_DIR)
 
 .PHONY: run
