@@ -84,7 +84,7 @@ LIBC_OBJS:=$(patsubst %.c,%.o,$(wildcard $(LIBC_SRC_DIR)/*.c))
 LIBC_OBJS:=$(patsubst $(LIBC_SRC_DIR)/%,$(LIBC_BUILD_DIR)/%,$(LIBC_OBJS))
 LIBC_HEADERS:=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/*.h)
 
-all: $(BIN_DIR)/beans.iso
+all: $(BIN_DIR)/beans.img
 
 debug: KCFLAGS:=$(filter-out -O2,$(KCFLAGS))
 debug: KCFLAGS+=-g
@@ -204,7 +204,7 @@ $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_M
 	file $(BIN_DIR)/beans.img
 
 .PHONY: run
-run: $(BIN_DIR)/beans.iso
+run: $(BIN_DIR)/beans.img
 	qemu-system-i386 -serial stdio -disk format=raw,file=$(BIN_DIR)/beans.img
 
 .PHONY: gdb
