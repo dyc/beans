@@ -93,7 +93,6 @@ debug: KMODCFLAGS+=-g
 debug: all
 
 # directories
-# todo: this is kinda terrible
 $(BOOT_BUILD_DIR)/mbr.o: | $(BOOT_BUILD_DIR)
 $(BOOT_BUILD_DIR)/boot.o: | $(BOOT_BUILD_DIR)
 $(BOOT_BUILD_DIR):
@@ -146,7 +145,7 @@ $(KERNEL_LIB_BUILD_DIR)/%.o: $(KERNEL_LIB_SRC_DIR)/%.S
 $(KERNEL_MOD_BUILD_DIR)/%.o: $(KERNEL_MOD_SRC_DIR)/%.c
 	$(CC) $(KMODCFLAGS) -c $< -o $@
 
-# todo: this is a bit of a mess rn lol
+# todo: this is a bit of a mess
 $(KERNEL_MOD_BUILD_DIR)/%.ko: $(KERNEL_MOD_BUILD_DIR)/%.o $(KERNEL_LIB_OBJS)
 	$(CC) -T $(MODULE_LINKER_SCRIPT) $(KMODCFLAGS) $< -o $@ $(KERNEL_LIB_OBJS)
 
