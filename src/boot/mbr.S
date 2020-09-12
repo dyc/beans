@@ -41,18 +41,19 @@ check_partition:
   jmp hang
 found_boot_partition:
   movw %bx, (boot_partition)
-  movw $0x7c00, (dap_dest_addr)
+  movb $0x10, (dap)
+  mov $0x7c00, (dap_dest_addr)
   // lba is at offset 0x08, put it into dap
   add $8, %bx
   movl (%bx), %ebx
   mov %ebx, (dap_lba)
   // read one block
-  movl $1, (dap_blocks)
+  mov $1, (dap_blocks)
   // retry once
   mov $2, %cx
 read_sector:
   mov (drive_number), %dl
-  mov dap, %si
+  lea dap, %si
   // extended (lba) read
   mov $0x42, %ah
   int $0x13
@@ -66,7 +67,7 @@ read_sector:
   jmp hang
 boot:
   // check for magic in boot image
-  mov $(0x7dfe), %bx
+  mov 0x7dfe, %bx
   cmp $0xaa55, %bx
   jne hang
   movw (boot_partition), %si
@@ -133,7 +134,7 @@ partition1:
   .byte 0x80
   .byte 0x02
   .byte 0x00
-
 // partitions 2-4
 .skip 48, 0
+
 .word 0xaa55
