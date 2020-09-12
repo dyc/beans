@@ -1,0 +1,44 @@
+#!/bin/bash
+set -eux -o pipefail
+
+if (($# != 1)) || [[ ! -d $1 ]]; then
+ echo "expected valid output directory as single argument"
+ exit 1
+fi
+OUT=$(realpath -s $1)
+# 80mb of 512b blocks
+SECTORS=163840
+BLOCKSIZE=512
+
+dd if=/dev/zero of=${OUT}/temp.img count=${SECTORS} bs=${BLOCKSIZE}
+
+# make partition table
+# todo: find a non-interactive version of this
+fdisk -e ${OUT}/temp.img
+# cut out mbr, rest is fs
+dd if=${OUT}/temp.img of=${OUT}/fs.img bs=${BLOCKSIZE} skip=2047
+rm ${OUT}/temp.img
+
+# create fat32 on fs.img
+DEVICE=$(echo $(hdiutil attach -nomount ${OUT}/fs.img) | xargs)
+set +x
+read -p "create beansfs on ${DEVICE} (y/n)? " choice
+case "${choice}" in
+  y|Y ) echo "here goes :'-)";;
+  n|N ) echo "aw :-("; exit 1;;
+  * ) echo "r u sure"; exit 1;;
+esac
+set -x
+newfs_msdos -F 32 ${DEVICE}
+hdiutil detach ${DEVICE}
+
+# create boot sectors
+dd if=${OUT}/mbr of=${OUT}/boot.img bs=${BLOCKSIZE} count=1
+# bootloader lives right after mbr
+dd if=${OUT}/boot seek=${BLOCKSIZE} bs=${BLOCKSIZE} count=1 >> ${OUT}/boot.img
+# fill to 1mb
+dd if=/dev/zero bs=1 seek=1024 count=1047040 >> ${OUT}/boot.img
+
+# create final disk
+cat ${OUT}/boot.img ${OUT}/fs.img > ${OUT}/beans.img
+file ${OUT}/beans.img

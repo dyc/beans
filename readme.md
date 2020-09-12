@@ -73,11 +73,33 @@ sudo make install-gcc
 sudo make install-target-libgcc
 ```
 
-finally, we'll be building our boot image with xorriso:
+for now, the only supported boot medium is a disk image. `scripts/mkimg`
+(invoked as part of `make`) will create an 80mb single-partition fat32 image
+for this purpose. unfortunately, this will require an interactive `fdisk`
+session (see bolded):
 
-```sh
-brew install xorriso
-```
+<pre>
++ fdisk -e /path/to/beans/build/bin/temp.img
+fdisk: could not open MBR file /usr/standalone/i386/boot0: No such file or directory
+The signature for this MBR is invalid.
+Would you like to initialize the partition table? [y] <b>y</b>
+Enter 'help' for information
+fdisk:*1> <b>disk</b>
+Disk: /path/to/beans/build/bin/temp.img       geometry: 650/4/63 [163840 sectors]
+Change disk geometry? [n] <b>n</b>
+fdisk:*1> <b>edit 1</b>
+         Starting       Ending
+ #: id  cyl  hd sec -  cyl  hd sec [     start -       size]
+------------------------------------------------------------------------
+ 1: 00    0   0   0 -    0   0   0 [         0 -          0] unused
+Partition id ('0' to disable)  [0 - FF]: [0] (? for help) <b>0B</b>
+Do you wish to edit in CHS mode? [n] <b>n</b>
+Partition offset [0 - 163840]: [63] <b>2047</b>
+Partition size [1 - 161793]: [161793] <b>\n</b>
+fdisk:*1> <b>write</b>
+Writing MBR at offset 0.
+fdisk: 1> <b>quit</b>
+</pre>
 
 _macos debuggers_
 

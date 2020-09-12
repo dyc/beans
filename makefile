@@ -141,7 +141,6 @@ $(KERNEL_LIB_BUILD_DIR)/%.o: $(KERNEL_LIB_SRC_DIR)/%.c
 	$(CC) $(KCFLAGS) -c $< -o $@
 
 $(KERNEL_LIB_BUILD_DIR)/%.o: $(KERNEL_LIB_SRC_DIR)/%.S
-	$(error here)
 	$(AS) $< -o $@
 
 $(KERNEL_MOD_BUILD_DIR)/%.o: $(KERNEL_MOD_SRC_DIR)/%.c
@@ -166,44 +165,8 @@ $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.S
 $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -T $(LINKER_SRC_DIR)/$(@F).ld -o $@ $^
 
-# todo: fix this once we successfully make a bootable image
-# some useful debugging tools:
-# - hdiutil imageinfo and hdiutil pmap
-# - diskutil info, list
-# - file
-# perhaps try mounting the created image to add files? (need to figure out how to
-# copy bootloader and kernel to image...)
 $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_MODS)
-	# 80mb of 512b blocks
-	dd if=/dev/zero of=$(BIN_DIR)/temp.img count=163840 bs=512
-	# todo: script this
-	# make partition table
-	# this seems to be preferable to something like diskutil's partitionDisk,
-	# but in case we end up going that route this generates something reasonable
-	# (seems like there are a couple extra apple_free sections inserted for some
-	# reason...and the mbr section is only 1 byte...):
-	# diskutil partitionDisk /dev/diskN 2 MBR FREE 2048B FAT32 BEANSFS R
-	#
-	# and then resize the blocks:
-	# diskutil unmountDisk /dev/diskN
-	# hdiutil attach -nomount /dev/diskN
-	# newfs_msdos -v BEANSFS -b 512 /dev/diskNs1
-	fdisk -e $(BIN_DIR)/temp.img
-	# cut out mbr, rest is fs
-	dd if=$(BIN_DIR)/temp.img of=$(BIN_DIR)/fs.img bs=512 skip=2047
-	rm $(BIN_DIR)/temp.img
-	# create fat32 on fs.img
-	beansfsdevice=$(shell hdiutil attach -nomount $(BIN_DIR)/fs.img); \
-		echo "$${beansfsdevice}" | xargs newfs_msdos -F 32; \
-		echo "$${beansfsdevice}" | xargs hdiutil detach
-	dd if=$(BIN_DIR)/mbr of=$(BIN_DIR)/boot.img bs=512 count=1
-	# bootloader lives right after mbr
-	dd if=$(BIN_DIR)/boot seek=512 bs=512 count=1 >> $(BIN_DIR)/boot.img
-	# fill to 1mb
-	dd if=/dev/zero bs=1 seek=1024 count=1047040 >> $(BIN_DIR)/boot.img
-	# make our final disk
-	cat $(BIN_DIR)/boot.img $(BIN_DIR)/fs.img > $(BIN_DIR)/beans.img
-	file $(BIN_DIR)/beans.img
+	./scripts/mkimg $(BIN_DIR)
 
 .PHONY: run
 run: $(BIN_DIR)/beans.img
