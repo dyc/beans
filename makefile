@@ -175,7 +175,7 @@ $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 # copy bootloader and kernel to image...)
 $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_MODS)
 	# 80mb of 512b blocks
-	dd if=/dev/zero of=$(BIN_DIR)/blank.img count=163840 bs=512
+	dd if=/dev/zero of=$(BIN_DIR)/temp.img count=163840 bs=512
 	# todo: script this
 	# make partition table
 	# this seems to be preferable to something like diskutil's partitionDisk,
@@ -188,19 +188,21 @@ $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_M
 	# diskutil unmountDisk /dev/diskN
 	# hdiutil attach -nomount /dev/diskN
 	# newfs_msdos -v BEANSFS -b 512 /dev/diskNs1
-	fdisk -e $(BIN_DIR)/blank.img
+	fdisk -e $(BIN_DIR)/temp.img
 	# cut out mbr, rest is fs
-	dd if=$(BIN_DIR)/blank.img of=$(BIN_DIR)/fs.img bs=512 skip=2047
+	dd if=$(BIN_DIR)/temp.img of=$(BIN_DIR)/fs.img bs=512 skip=2047
+	rm $(BIN_DIR)/temp.img
 	# create fat32 on fs.img
-	tempdevice=$(shell hdiutil attach -nomount $(BIN_DIR)/fs.img); \
-		echo "$${tempdevice}" | xargs newfs_msdos -F 32; \
-		echo "$${tempdevice}" | xargs hdiutil detach
-	# noop but do it anyways
-	dd if=$(BIN_DIR)/mbr of=$(BIN_DIR)/mbr.img bs=512 count=1
+	beansfsdevice=$(shell hdiutil attach -nomount $(BIN_DIR)/fs.img); \
+		echo "$${beansfsdevice}" | xargs newfs_msdos -F 32; \
+		echo "$${beansfsdevice}" | xargs hdiutil detach
+	dd if=$(BIN_DIR)/mbr of=$(BIN_DIR)/boot.img bs=512 count=1
+	# bootloader lives right after mbr
+	dd if=$(BIN_DIR)/boot seek=512 bs=512 count=1 >> $(BIN_DIR)/boot.img
 	# fill to 1mb
-	dd if=/dev/zero bs=1 seek=512 count=1047552 >> $(BIN_DIR)/mbr.img
+	dd if=/dev/zero bs=1 seek=1024 count=1047040 >> $(BIN_DIR)/boot.img
 	# make our final disk
-	cat $(BIN_DIR)/mbr.img $(BIN_DIR)/fs.img > $(BIN_DIR)/beans.img
+	cat $(BIN_DIR)/boot.img $(BIN_DIR)/fs.img > $(BIN_DIR)/beans.img
 	file $(BIN_DIR)/beans.img
 
 .PHONY: run
