@@ -170,13 +170,13 @@ $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_M
 
 .PHONY: run
 run: $(BIN_DIR)/beans.img
-	qemu-system-i386 -serial stdio -disk format=raw,file=$(BIN_DIR)/beans.img
+	qemu-system-i386 -serial stdio -drive format=raw,file=$(BIN_DIR)/beans.img
 
 .PHONY: gdb
 gdb: debug
 	$(OBJCOPY) --only-keep-debug $(BIN_DIR)/beans $(BIN_DIR)/beans.sym
 	$(OBJCOPY) --strip-debug $(BIN_DIR)/beans
-	qemu-system-i386 -s -S -serial stdio -disk format=raw,file=$(BIN_DIR)/beans.img
+	qemu-system-i386 -s -S -serial stdio -drive format=raw,file=$(BIN_DIR)/beans.img
 
 .PHONY: clean
 clean:
