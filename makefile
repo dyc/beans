@@ -6,6 +6,7 @@ OBJCOPY:=$(PREFIX)/bin/i686-elf-objcopy
 
 BUILD_DIR:=build
 BIN_DIR:=$(BUILD_DIR)/bin
+# todo: add back ISO build
 ISO_DIR:=$(BUILD_DIR)/iso
 BOOT_BUILD_DIR:=$(BUILD_DIR)/boot
 KERNEL_BUILD_DIR:=$(BUILD_DIR)/kernel
@@ -96,36 +97,36 @@ debug: all
 $(BOOT_BUILD_DIR)/mbr.o: | $(BOOT_BUILD_DIR)
 $(BOOT_BUILD_DIR)/boot.o: | $(BOOT_BUILD_DIR)
 $(BOOT_BUILD_DIR):
-	@mkdir -p $@
+	mkdir -p $@
 
 $(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNEL_ASM_BUILD_DIR)
 $(KERNEL_BUILD_DIR):
-	@mkdir -p $@
+	mkdir -p $@
 $(KERNEL_ASM_BUILD_DIR):
-	@mkdir -p $@
+	mkdir -p $@
 
 $(KERNEL_LIB_OBJS): | $(KERNEL_LIB_BUILD_DIR)
 $(KERNEL_LIB_BUILD_DIR):
-	@mkdir -p $@
+	mkdir -p $@
 
 $(KERNEL_MOD_OBJS): | $(KERNEL_MOD_BUILD_DIR)
 $(KERNEL_MODS): | $(KERNEL_MOD_BUILD_DIR)
 $(KERNEL_MOD_BUILD_DIR):
-	@mkdir -p $@
+	mkdir -p $@
 
 $(LIB_OBJS): | $(LIB_BUILD_DIR)
 $(LIB_BUILD_DIR):
-	@mkdir -p $@
+	mkdir -p $@
 
 $(LIBC_OBJS): | $(LIBC_BUILD_DIR)
 $(LIBC_BUILD_DIR):
-	@mkdir -p $@
+	mkdir -p $@
 
 $(BIN_DIR)/mbr: | $(BIN_DIR)
 $(BIN_DIR)/boot: | $(BIN_DIR)
 $(BIN_DIR)/beans: | $(BIN_DIR)
 $(BIN_DIR):
-	@mkdir -p $@
+	mkdir -p $@
 
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
 	$(CC) $(KCFLAGS) -c $< -o $@
@@ -165,27 +166,56 @@ $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.S
 $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -T $(LINKER_SRC_DIR)/$(@F).ld -o $@ $^
 
-$(BIN_DIR)/beans.iso: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_MODS)
-	rm -rf $(ISO_DIR)
-	mkdir -p $(ISO_DIR)/boot
-	mkdir -p $(ISO_DIR)/modules
-	cp $(BIN_DIR)/boot $(ISO_DIR)/boot/boot
-	cp $(KERNEL_MOD_BUILD_DIR)/*.ko $(ISO_DIR)/modules
-	xorriso -as mkisofs -r \
-		-b boot/boot \
-		-c boot/boot.catalog \
-		-o $(BIN_DIR)/beans.iso \
-		$(ISO_DIR)
+# todo: fix this once we successfully make a bootable image
+# some useful debugging tools:
+# - hdiutil imageinfo and hdiutil pmap
+# - diskutil info, list
+# - file
+# perhaps try mounting the created image to add files? (need to figure out how to
+# copy bootloader and kernel to image...)
+$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/beans $(KERNEL_MODS)
+	# 80mb of 512b blocks
+	dd if=/dev/zero of=$(BIN_DIR)/blank.img count=163840 bs=512
+	# todo: script this
+	# make partition table
+	# this seems to be preferable to something like diskutil's partitionDisk,
+	# but in case we end up going that route this generates something reasonable
+	# (seems like there are a couple extra apple_free sections inserted for some
+	# reason...and the mbr section is only 1 byte...):
+	# diskutil partitionDisk /dev/diskN 2 MBR FREE 2048B FAT32 BEANSFS R
+	#
+	# and then resize the blocks:
+	# diskutil unmountDisk /dev/diskN
+	# hdiutil attach -nomount /dev/diskN
+	# newfs_msdos -v BEANSFS -b 512 /dev/diskNs1
+	fdisk -e $(BIN_DIR)/blank.img
+	# cut out mbr, rest is fs
+	dd if=$(BIN_DIR)/blank.img of=$(BIN_DIR)/fs.img bs=512 skip=2047
+	# create fat32 on fs.img
+	tempdevice=$(shell hdiutil attach -nomount $(BIN_DIR)/fs.img); \
+		echo "$${tempdevice}" | xargs newfs_msdos -F 32; \
+		echo "$${tempdevice}" | xargs hdiutil detach
+	# noop but do it anyways
+	dd if=$(BIN_DIR)/mbr of=$(BIN_DIR)/mbr.img bs=512 count=1
+	# fill to 1mb
+	dd if=/dev/zero bs=1 seek=512 count=1047552 >> $(BIN_DIR)/mbr.img
+	# make our final disk
+	# rn, generates something semisensical but likely corrupt? i see
+	# reasonable partition info (active first partition, correct start/end CHS)
+	# but i'm guessing that's just stuff inserted by fdisk and not
+	# read from our mbr table? idk
+	cat $(BIN_DIR)/mbr.img $(BIN_DIR)/fs.img > $(BIN_DIR)/beans.img
+	file $(BIN_DIR)/beans.img
 
 .PHONY: run
 run: $(BIN_DIR)/beans.iso
-	qemu-system-i386 -serial stdio -cdrom $(BIN_DIR)/beans.iso
+	qemu-system-i386 -serial stdio -disk format=raw,file=$(BIN_DIR)/beans.img
 
 .PHONY: gdb
 gdb: debug
 	$(OBJCOPY) --only-keep-debug $(BIN_DIR)/beans $(BIN_DIR)/beans.sym
 	$(OBJCOPY) --strip-debug $(BIN_DIR)/beans
-	qemu-system-i386 -s -S -serial stdio -cdrom $(BIN_DIR)/beans.iso
+	qemu-system-i386 -s -S -serial stdio -disk format=raw,file=$(BIN_DIR)/beans.img
 
 .PHONY: clean
 clean:
