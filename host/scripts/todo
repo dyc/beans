@@ -1,0 +1,65 @@
+#!/bin/bash
+set -eu -o pipefail
+
+# generate todo.md, an aggregation of todos in this repo (that includes itself!)
+
+if ! [ -x "$(command -v ag)" ]; then
+  echo "todo uses ag" >&2
+  exit 1
+fi
+
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PROJDIR="${MYDIR}/../.."
+# note to self: if using command substitution as a temporary value, _must_
+# use quotes to preserve newlines. or just always store in a variable ya doofus
+OUT="${PROJDIR}/todos.md"
+OUTCOMMENTS=$({ test -f "${OUT}" && ag --nocolor --nogroup --nonumbers "\[comment\]: #" "${OUT}"; } || echo "")
+
+# (re)create output file
+:> "${OUT}"
+TODOS=$(ag --nocolor --ignore "${PROJDIR}/scripts/todo" --nogroup "todo" "${PROJDIR}" || echo  "")
+i=1
+
+if [ "${TODOS}" != "" ]; then 
+  while IFS=$'\n' read -r -a LINES; do
+    for e in "${LINES[@]}"; do
+      while IFS=":" read -r -a LINE; do
+        # brittle since we split on ":", which todos usually have, but good enough
+        if ((${#LINE[@]} != 4)); then
+          continue
+        fi
+
+        FILE="${LINE[0]}"
+        N="${LINE[1]}"
+        TODO="${LINE[3]}"
+
+        # don't recurse lol
+        if [[ "${TODO}" = *"todo"* ]]; then
+          continue
+        fi
+
+        printf "%d. [%s#L%d:%s](%s#L%d)\n" "${i}" "${FILE}" "${N}" "${TODO}" "${FILE}" "${N}" >> todos.md
+        i=$((i+1))
+      done <<< "${e#"${PROJDIR}/"}"
+    done
+  done <<< "${TODOS}"
+fi
+
+
+if [ "${OUTCOMMENTS}" != "" ]; then 
+  while IFS=$'\n' read -r -a LINES; do
+    for e in "${LINES[@]}"; do
+      while IFS=":" read -r -a LINE; do
+        # brittle: extract string from parens
+        TODO=$(echo "${LINE[1]}" | cut -d "(" -f2 | cut -d ")" -f1)
+
+        # can't link line nums in out file since we're recreating it...
+        printf "%d. [todos.md: %s](todos.md)\n" "${i}" "${TODO}" >> todos.md
+        i=$((i+1))
+      done <<< "${e}"
+    done
+  done <<< "${OUTCOMMENTS}"
+
+  # be sure to (re)include todos.md's todos
+  echo "${OUTCOMMENTS}" >> "${OUT}"
+fi

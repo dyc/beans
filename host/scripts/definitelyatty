@@ -1,0 +1,23 @@
+#!/bin/bash
+set -eu -o pipefail
+
+if [[ ! -f $1 ]]; then
+ echo "expected script to wrap as first arg"
+ exit 1
+fi
+
+if [[ ! -f $2 ]]; then
+ echo "expected isatty.dylib as second arg"
+ exit 1
+fi
+
+# context: due to some unexplainable output, i had thought ag didn't
+# include newlines when not outputting to stdout :-( turns out this
+# is not true (only coloring is affected by isatty) but i wanted
+# to keep this around in case it could be useful later since this
+# became a little more difficult to do after el capitan when SIP
+# began purging DYLD_ variables, or so it would seem, in protected
+# processes. for some reason exporting these variables works :-))))
+export DYLD_INSERT_LIBRARIES=$2
+source $1
+unset DYLD_INSERT_LIBRARIES

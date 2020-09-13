@@ -15,6 +15,7 @@ KERNEL_LIB_BUILD_DIR:=$(KERNEL_BUILD_DIR)/lib
 KERNEL_MOD_BUILD_DIR:=$(KERNEL_BUILD_DIR)/modules
 LIB_BUILD_DIR:=$(BUILD_DIR)/lib
 LIBC_BUILD_DIR:=$(BUILD_DIR)/libc
+HOST_BUILD_DIR:=$(BUILD_DIR)/host
 
 SRC_DIR:=src
 BOOT_SRC_DIR:=$(SRC_DIR)/boot
@@ -127,6 +128,10 @@ $(BIN_DIR)/beans: | $(BIN_DIR)
 $(BIN_DIR):
 	mkdir -p $@
 
+$(HOST_BUILD_DIR)/isatty.dylib: | $(HOST_BUILD_DIR)
+$(HOST_BUILD_DIR):
+	mkdir -p $@
+
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
 	$(CC) $(KCFLAGS) -c $< -o $@
 
@@ -174,7 +179,10 @@ $(BIN_DIR)/boot2: $(BOOT_BUILD_DIR)/boot.o $(BOOT_BUILD_DIR)/loadk.o
 
 # todo: change this back to using boot once we get rid of boot2
 $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot2 $(BIN_DIR)/beans $(KERNEL_MODS)
-	./scripts/mkimg $(BIN_DIR)
+	./host/scripts/mkimg $(BIN_DIR)
+
+$(HOST_BUILD_DIR)/isatty.dylib: host/isatty.c
+	gcc -shared -fPIC $< -o $@
 
 .PHONY: run
 run: $(BIN_DIR)/beans.img
@@ -189,3 +197,10 @@ gdb: debug
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
+
+.PHONY: todo
+todo:
+	./host/scripts/todo
+
+definitelyatty: $(HOST_BUILD_DIR)/isatty.dylib
+	./host/scripts/definitelyatty $(script) $(HOST_BUILD_DIR)/isatty.dylib

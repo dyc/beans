@@ -73,7 +73,7 @@ sudo make install-gcc
 sudo make install-target-libgcc
 ```
 
-for now, the only supported boot medium is a disk image. `scripts/mkimg`
+for now, the only supported boot medium is a disk image. `host/scripts/mkimg`
 (invoked as part of `make`) will create an 80mb single-partition fat32 image
 for this purpose. unfortunately, this will require an interactive `fdisk`
 session (see bolded for what to input):
@@ -126,12 +126,12 @@ make gdb # will output symbols in build/bin/beans.sym
 ...
 ```
 
-there are some convenience scripts in `scripts/gdb`, e.g.
+there are some convenience scripts in `host/scripts/gdb`, e.g.
 
 ```sh
-gdb -command scripts/gdb/boot
+gdb -command host/scripts/gdb/boot
 # breaks at start of partition probing, in relocated mbr (offset from 0x600)
-gdb -command scripts/gdb/mbr
+gdb -command host/scripts/gdb/mbr
 ```
 
 _debugger debugging_
