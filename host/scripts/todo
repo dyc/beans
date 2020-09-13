@@ -13,14 +13,15 @@ PROJDIR="${MYDIR}/../.."
 OUT="${PROJDIR}/todo.md"
 
 # grab todos from existing out file
-OUTCOMMENTS=$({ test -f "${OUT}" && ag --nocolor --nogroup --nonumbers "\[comment\]: #" "${OUT}" | sort; } || echo "")
+# version sort turns out to work well for filename:lineno
+OUTCOMMENTS=$({ test -f "${OUT}" && ag --nocolor --nogroup --nonumbers "\[comment\]: #" "${OUT}" | sort -V; } || echo "")
 # (re)create out file
 :> "${OUT}"
 
 # grab all other todos
 # may consider ignoring this file since it contains many instances of "todo",
 # but seems ok so far
-TODOS=$({ ag --nocolor --nogroup "todo" "${PROJDIR}" | sort; } || echo  "")
+TODOS=$({ ag --nocolor --nogroup "todo" "${PROJDIR}" | sort -V; } || echo  "")
 
 i=1
 if [ "${TODOS}" != "" ]; then 
@@ -42,13 +43,13 @@ if [ "${TODOS}" != "" ]; then
           continue
         fi
 
-        TODO="${LINE[3]}"
-        # don't recurse lol
-        if [[ "${TODO}" = *"todo"* ]]; then
+        TODOPRE="${LINE[2]}"
+        if [[ "${TODOPRE}" != *"# todo"*  &&  "${TODOPRE}" != *"// todo"* ]]; then
           continue
         fi
 
-        printf "%d. [%s#L%d:%s](%s#L%d)\n" "${i}" "${FILE}" "${N}" "${TODO}" "${FILE}" "${N}" >> todo.md
+        TODO="${LINE[3]}"
+        printf "%d. [%s#L%d:%s](%s#L%d)\n" "${i}" "${FILE}" "${N}" "${TODO}" "${FILE}" "${N}" >> "${OUT}"
         i=$((i+1))
       done <<< "${e#"${PROJDIR}/"}"
     done
@@ -63,7 +64,7 @@ if [ "${OUTCOMMENTS}" != "" ]; then
       while IFS=":" read -r -a LINE; do
         TODO=$(echo "${LINE[1]}" | cut -d "(" -f2 | cut -d ")" -f1)
 
-        printf "%d. [todo.md: %s](todo.md)\n" "${i}" "${TODO}" >> todo.md
+        printf "%d. [todo.md: %s](todo.md)\n" "${i}" "${TODO}" >> "${OUT}"
         i=$((i+1))
       done <<< "${e}"
     done
