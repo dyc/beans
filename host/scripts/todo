@@ -61,6 +61,6 @@ if [ "${OUTCOMMENTS}" != "" ]; then
   done <<< "${OUTCOMMENTS}"
 
   # be sure to (re)include todos.md's todos
-  echo ""
+  echo "" >> "${OUT}"
   echo "${OUTCOMMENTS}" >> "${OUT}"
 fi
