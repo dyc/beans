@@ -13,7 +13,7 @@ PROJDIR="${MYDIR}/../.."
 OUT="${PROJDIR}/todo.md"
 
 # grab todos from existing out file
-OUTCOMMENTS=$({ test -f "${OUT}" && ag --nocolor --nogroup --nonumbers "\[comment\]: #" "${OUT}"; } || echo "")
+OUTCOMMENTS=$({ test -f "${OUT}" && ag --nocolor --nogroup --nonumbers "\[comment\]: #" "${OUT}" | sort; } || echo "")
 # (re)create out file
 :> "${OUT}"
 

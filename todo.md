@@ -12,8 +12,8 @@
 12. [src/boot/mbr.S#L51: change this back to 1 block after we finish](src/boot/mbr.S#L51)
 13. [src/kernel/main.c#L82: change this back to vga_write(kbdbuf);](src/kernel/main.c#L82)
 14. [src/sysroot/usr/include/sys/device.h#L5: temporary home for kbd output until we have a filesystem](src/sysroot/usr/include/sys/device.h#L5)
-15. [todo.md: this is how to add a top-level todo](todo.md)
-16. [todo.md: precommit?](todo.md)
+15. [todo.md: precommit?](todo.md)
+16. [todo.md: this is how to add a top-level todo](todo.md)
 
-[comment]: # (this is how to add a top-level todo)
 [comment]: # (precommit?)
+[comment]: # (this is how to add a top-level todo)
