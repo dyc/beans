@@ -48,8 +48,8 @@ found_boot_partition:
   movl (%bx), %ebx
   mov %ebx, (dap_lba)
   // read one block
-  // todo: change this back to 1 block after we finish
-  // testing loadk
+  // todo: only read one block here?
+  // need to figure out how/when to load loadk...
   mov $2, (dap_blocks)
   // retry once
   mov $2, %cx

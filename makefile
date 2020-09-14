@@ -173,12 +173,15 @@ $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.S
 $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -T $(LINKER_SRC_DIR)/$(@F).ld -o $@ $^
 
-# todo: fold this into a generalized boot target if possible
-$(BIN_DIR)/boot2: $(BOOT_BUILD_DIR)/boot.o $(BOOT_BUILD_DIR)/loadk.o
+$(BIN_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o $(BOOT_BUILD_DIR)/loadk.o
 	$(LD) -T $(LINKER_SRC_DIR)/boot.ld -o $@ $^
 
-# todo: change this back to using boot once we get rid of boot2
-$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot2 $(BIN_DIR)/beans $(KERNEL_MODS)
+# todo: actually make this
+$(BIN_DIR)/ramdisk.img: $(KERNEL_MOD_BUILD_DIR)/ata.ko
+	echo $^
+
+# todo: move kernel and mods to their own binary
+$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/ramdisk.img $(BIN_DIR)/beans $(KERNEL_MODS)
 	./host/scripts/mkimg $(BIN_DIR)
 
 $(HOST_BUILD_DIR)/isatty.dylib: host/isatty.c
