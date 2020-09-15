@@ -30,7 +30,6 @@ start_check_partition:
   mov $4, %cx
 check_partition:
   // check for activeness
-  # movb (%bx), %al
   testb $0x80, (%bx)
   jnz found_boot_partition
   add $0x10, %bx
