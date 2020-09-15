@@ -1,4 +1,4 @@
-we're running macos 10.14.6, with gcc 4.2.1. before setting up our cross
+i'm running macos 10.14.6, with gcc 4.2.1. before setting up our cross
 toolchain, let's grab latest gcc (10.2.0):
 
 ```sh
@@ -24,7 +24,7 @@ export CPP=/usr/local/gcc-10.2.0/bin/cpp-10.2
 export LD=/usr/local/gcc-10.2.0/bin/gcc-10.2
 ```
 
-next, set a home for our cross builds, so that they're isolated from system
+next, set a home for our cross builds so that they're isolated from host
 tools, and what we're targeting:
 
 ```sh
@@ -33,8 +33,8 @@ export PATH="$PREFIX/bin:$PATH"
 export TARGET=i686-elf
 ```
 
-now we build binutils for our cross compiler. do this before building gcc,
-which presumably links target libraries--we ran into issues when we tried using
+now build binutils for our cross compiler. do this before building gcc,
+which presumably links target libraries--i ran into issues when i tried using
 gcc built without cross binutils:
 
 ```sh
@@ -73,7 +73,7 @@ sudo make install-gcc
 sudo make install-target-libgcc
 ```
 
-for now, the only supported boot medium is a disk image. `host/scripts/mkimg`
+currently, the only supported boot medium is a disk image. `host/scripts/mkimg`
 (invoked as part of `make`) will create an 80mb single-partition fat32 image
 for this purpose. unfortunately, this will require an interactive `fdisk`
 session (see bolded for what to input):
@@ -101,15 +101,28 @@ Writing MBR at offset 0.
 fdisk: 1> <b>quit</b>
 </pre>
 
-_macos debuggers_
+_debugger debugging_
 
-we weren't able to get lldb to load the kernel--although
-we made only a pitiful effort to do so--and saw mention of 32 bit support being dropped
-in catalina so we went back to gdb. the version (8.0.1) of gdb we had `brew install`'ed
-a long while ago didn't support 32 bit ELFs so we reinstalled it. we think there
-used to be a `--with-all-targets` option for `brew install gdb` but it looks like
-that is default enabled so at the time of this writing `brew install gdb` is all
-that's needed to get a version (e.g. 9.2) that can load our kernel.
+i wasn't able to get lldb to load the kernel--although i made only a pitiful
+effort to do so--and saw mention of 32 bit support being dropped in catalina so
+i went back to gdb. the version (8.0.1) of gdb i had `brew install`'ed a long
+while ago didn't support 32 bit ELFs so i reinstalled it. i think there used to
+be a `--with-all-targets` install option but it looks like that is default
+enabled now, so `brew install gdb` is all that's needed to get a version (e.g.
+9.2) that can load our kernel. to check supported architectures, try:
+
+```sh
+(gdb) show configuration
+(gdb) set debug arch 1
+(gdb) set architecture <tab> # should show lots of stuff (200 for us)
+(gdb) set gnutarget <tab> # should show lots of stuff (200 for us)
+```
+
+also, it looks like i8086 [doesn't support real mode assembly](https://sourceware.org/bugzilla/show_bug.cgi?id=22869),
+e.g. `set architecture i8086; break *0x7c00; layout asm` still shows 32 bit code :-(,
+but our good friends at so have come up with a [fix](https://stackoverflow.com/questions/32955887/how-to-disassemble-16-bit-x86-boot-sector-code-in-gdb-with-x-i-pc-it-gets-tr).
+
+some other useful tidbits:
 
 for some reason, we have to `symbol-file` before `file` (possible gdb [bug](https://stackoverflow.com/questions/57239664/gdb-reading-symbols-with-symbol-file-command-on-a-core-file)):
 
@@ -133,17 +146,3 @@ gdb -command host/scripts/gdb/boot
 # breaks at start of partition probing, in relocated mbr (offset from 0x600)
 gdb -command host/scripts/gdb/mbr
 ```
-
-_debugger debugging_
-
-- check supported architectures:
-  - (gdb) set arch debug 1
-  - (gdb) set architecture <tab> # should show lots of stuff (200 for us)
-    - this [doesn't seem to support real mode assembly](https://sourceware.org/bugzilla/show_bug.cgi?id=22869)
-      any more, e.g. `set architecture i8086; break *0x7c00; layout asm`
-      still shows 32 bit code :-(
-    - ah, our good friends at so have come up with a [fix](https://stackoverflow.com/questions/32955887/how-to-disassemble-16-bit-x86-boot-sector-code-in-gdb-with-x-i-pc-it-gets-tr)
-  - (gdb) set gnutarget <tab> # should show lots of stuff (200 for us)
-  - (gdb) show configuration
-  - remember, we want to load target: `file ./build/bin/beans`
-    - want not stripped
