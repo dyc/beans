@@ -37,14 +37,11 @@ hdiutil detach ${DEVICE}
 # create boot sectors
 dd if=${OUT}/mbr of=${OUT}/boot.img bs=${BLOCKSIZE} count=1
 # bootloader lives right after mbr
-# todo: remove this once we figure out what to do with loadk
-# fill out second block
-BOOTEND=$(($(stat -f %z ${OUT}/boot)))
-BOOTPAD=$((1024-${BOOTEND}))
-dd if=/dev/zero bs=1 count=${BOOTPAD} >> ${OUT}/boot
-dd if=${OUT}/boot bs=${BLOCKSIZE} count=2 >> ${OUT}/boot.img
+dd if=${OUT}/boot bs=${BLOCKSIZE} count=1 >> ${OUT}/boot.img
 # fill to 1mb
-dd if=/dev/zero bs=1 count=1046528 >> ${OUT}/boot.img
+BOOTEND=$(($(stat -f %z ${OUT}/boot.img)))
+BOOTPAD=$(((2047*512)-${BOOTEND}))
+dd if=/dev/zero bs=1 count=${BOOTPAD} >> ${OUT}/boot.img
 
 # create final disk
 cat ${OUT}/boot.img ${OUT}/fs.img > ${OUT}/beans.img

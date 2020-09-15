@@ -47,9 +47,7 @@ found_boot_partition:
   movl (%bx), %ebx
   mov %ebx, (dap_lba)
   // read one block
-  // todo: only read one block here?
-  // need to figure out how/when to load loadk...
-  mov $2, (dap_blocks)
+  mov $1, (dap_blocks)
   // retry once
   mov $2, %cx
 read_sector:
@@ -73,7 +71,7 @@ boot:
   jne hang
   movw (boot_partition), %si
   mov (drive_number), %dl
-  // yikes
+  // hold onto ur butts
   ljmp $0x0, $0x7c00
 
 hang:

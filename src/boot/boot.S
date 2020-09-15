@@ -69,6 +69,9 @@ no92:
   mov %ax, %gs
   mov %ax, %ss
 
+  // todo: pretty sure need to load initrd here, having probed memory
+  // don't need to probe hdd geom since we did that in mbr
+
 .global loadk
   // flush code segreg
   ljmp $0x08, $loadk
