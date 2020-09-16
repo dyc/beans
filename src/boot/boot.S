@@ -19,6 +19,10 @@ _start:
   // x/120xb 0x500 to inspect
   mov $0x50, %ax
   mov %ax, %es
+  // mbr hands us these
+  movw %si, (boot_partition)
+  mov %dl, (drive_number)
+
   // get available memory below 0x0A0000 (640kb)
   // error status returned in cf so clear it
   clc
@@ -55,6 +59,35 @@ no92:
   mov %ax, gdt_descriptor
   lgdtw gdt_descriptor
 
+  // i guess mbr could have loaded this alongside us but
+  // i like this better whatever
+  movb $0x10, (dap)
+  // load right after this
+  mov $0x7e00, (dap_dest_addr)
+  movw (boot_partition), %bx
+  // lba is at offset 0x08, put it into dap
+  add $8, %bx
+  movl (%bx), %ebx
+  mov %ebx, (dap_lba)
+  mov $4, (dap_blocks)
+  // retry once
+  mov $2, %cx
+read_sector:
+  mov (drive_number), %dl
+  lea dap, %si
+  // extended (lba) read
+  mov $0x42, %ah
+  int $0x13
+  jnc done_read
+  dec %cx
+  jz hang
+  // else reset disk and try again
+  xor %ah, %ah
+  int $0x13
+  jnc read_sector
+  jmp hang
+
+done_read:
   // protected mode
   // do after gdt with no interrupts
   mov %cr0, %eax
@@ -69,12 +102,8 @@ no92:
   mov %ax, %gs
   mov %ax, %ss
 
-  // todo: pretty sure need to load initrd here, having probed memory
-  // don't need to probe hdd geom since we did that in mbr
-
-.global loadk
   // flush code segreg
-  ljmp $0x08, $loadk
+  ljmp $0x08, $0x7e00
 
 // if first iteration fails then e820 isn't supported
 // and we should indicate fail on return
@@ -190,6 +219,31 @@ gdt_start:
   .byte 0xcf
   .byte 0
 gdt_end:
+
+.global drive_number
+drive_number:
+  .byte 0
+
+.global boot_partition
+boot_partition:
+  .word 0
+  .word 0
+
+// todo: verify this is how we want to be doing reads...
+dap:
+  .byte 0
+  .byte 0
+dap_blocks:
+  .word 0
+dap_dest_addr:
+  .word 0
+  .word 0
+dap_lba:
+  .word 0
+  .word 0
+dap_lba_ext:
+  .word 0
+  .word 0
 
 .skip 510-(.-_start), 0
 .word 0xaa55
