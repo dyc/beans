@@ -67,8 +67,8 @@ no92:
   movw (boot_partition), %bx
   // lba is at offset 0x08, put it into dap
   add $8, %bx
-  // read third block (mbr is 1, we are 2)
-  add $2, (%bx)
+  // read second block (we are first)
+  add $1, (%bx)
   movl (%bx), %ebx
   mov %ebx, (dap_lba)
   mov $4, (dap_blocks)
