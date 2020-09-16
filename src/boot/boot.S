@@ -71,6 +71,7 @@ no92:
   add $1, (%bx)
   movl (%bx), %ebx
   mov %ebx, (dap_lba)
+  // todo: lol 4 seems nice for now. resize once we make initrd
   mov $4, (dap_blocks)
   // retry once
   mov $2, %cx
