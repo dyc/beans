@@ -1,11 +1,12 @@
 #!/bin/bash
 set -eux -o pipefail
 
-if (($# != 1)) || [[ ! -d $1 ]]; then
- echo "expected valid output directory as single argument"
+if (($# != 2)) || [[ ! -d $1 ]] || [[ ! -d $2 ]]; then
+ echo "expected arguments: [output directory] [sysroot]"
  exit 1
 fi
 OUT=$(realpath -s $1)
+SYSROOT=$(realpath -s $2)
 # 80mb of 512b blocks
 SECTORS=163840
 BLOCKSIZE=512
@@ -35,9 +36,14 @@ set -x
 newfs_msdos -F 32 ${DEVICE}
 mkdir ${OUT}/mnt
 mount -t msdos ${DEVICE} ${OUT}/mnt
+# todo: lol this probably isn't right
+# at the very least need to set up fs metadata
+# todo: add boot, kernel, initrd somewhere. im guessing we also need boot config?
+cp -r ${SYSROOT}/. ${OUT}/mnt
 ls ${OUT}/mnt
 umount ${DEVICE}
 hdiutil detach ${DEVICE}
+rm -r ${OUT}/mnt
 
 # create boot sector
 dd if=${OUT}/mbr of=${OUT}/boot.img bs=${BLOCKSIZE} count=1

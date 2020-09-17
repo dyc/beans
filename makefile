@@ -181,8 +181,8 @@ $(BIN_DIR)/ramdisk.img: $(BOOT_BUILD_DIR)/loadk.o $(KERNEL_MOD_BUILD_DIR)/ata.ko
 	echo "hi"
 
 # todo: set up initrd, kernel and modules in fs
-$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/ramdisk.img $(BIN_DIR)/beans $(KERNEL_MODS)
-	./host/scripts/mkimg $(BIN_DIR)
+$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/ramdisk.img $(BIN_DIR)/beans $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
+	./host/scripts/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
 
 $(HOST_BUILD_DIR)/%.dylib: host/%.c
 	gcc -shared -fPIC $< -o $@
