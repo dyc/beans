@@ -184,7 +184,7 @@ $(BIN_DIR)/ramdisk.img: $(BOOT_BUILD_DIR)/loadk.o $(KERNEL_MOD_BUILD_DIR)/ata.ko
 $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/ramdisk.img $(BIN_DIR)/beans $(KERNEL_MODS)
 	./host/scripts/mkimg $(BIN_DIR)
 
-$(HOST_BUILD_DIR)/isatty.dylib: host/isatty.c
+$(HOST_BUILD_DIR)/%.dylib: host/%.c
 	gcc -shared -fPIC $< -o $@
 
 .PHONY: run

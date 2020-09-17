@@ -94,8 +94,8 @@ fdisk:*1> <b>edit 1</b>
  1: 00    0   0   0 -    0   0   0 [         0 -          0] unused
 Partition id ('0' to disable)  [0 - FF]: [0] (? for help) <b>0B</b>
 Do you wish to edit in CHS mode? [n] <b>n</b>
-Partition offset [0 - 163840]: [63] <b>2047</b>
-Partition size [1 - 161793]: [161793] <b>\n</b>
+Partition offset [0 - 163840]: [63] <b>\n</b>
+Partition size [1 - 163777]: [163777] <b>\n</b>
 fdisk:*1> <b>write</b>
 Writing MBR at offset 0.
 fdisk: 1> <b>quit</b>

@@ -9,16 +9,16 @@ OUT=$(realpath -s $1)
 # 80mb of 512b blocks
 SECTORS=163840
 BLOCKSIZE=512
+PARTITION_OFFSET=63
 
 dd if=/dev/zero of=${OUT}/temp.img count=${SECTORS} bs=${BLOCKSIZE}
 
 # make partition table
+# -a=dos to start partition at sector 63 instead of 2048
 # todo: find a non-interactive version of this
-fdisk -e ${OUT}/temp.img
+fdisk -a dos -e ${OUT}/temp.img
 # cut out mbr, rest is fs
-# todo: why is this 2047 blocks? accounting for mbr?
-# also why partition after 1mb? ...should partition offset be 2048?
-dd if=${OUT}/temp.img of=${OUT}/fs.img bs=${BLOCKSIZE} skip=2047
+dd if=${OUT}/temp.img of=${OUT}/fs.img bs=${BLOCKSIZE} skip=${PARTITION_OFFSET}
 rm ${OUT}/temp.img
 
 # create fat32 on fs.img
@@ -31,16 +31,22 @@ case "${choice}" in
   * ) echo "sorry?"; exit 1;;
 esac
 set -x
+# todo: read somewhere that -F doesn't work
 newfs_msdos -F 32 ${DEVICE}
+mkdir ${OUT}/mnt
+mount -t msdos ${DEVICE} ${OUT}/mnt
+ls ${OUT}/mnt
+umount ${DEVICE}
 hdiutil detach ${DEVICE}
 
-# create boot sectors
+# create boot sector
 dd if=${OUT}/mbr of=${OUT}/boot.img bs=${BLOCKSIZE} count=1
+# todo: move bootloader into fs and remove this
 # bootloader lives right after mbr
 dd if=${OUT}/boot bs=${BLOCKSIZE} count=1 >> ${OUT}/boot.img
 # fill to 1mb
 BOOTEND=$(($(stat -f %z ${OUT}/boot.img)))
-BOOTPAD=$(((2047*512)-${BOOTEND}))
+BOOTPAD=$(((${PARTITION_OFFSET}*${BLOCKSIZE})-${BOOTEND}))
 dd if=/dev/zero bs=1 count=${BOOTPAD} >> ${OUT}/boot.img
 
 # create final disk
