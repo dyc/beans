@@ -75,31 +75,7 @@ sudo make install-target-libgcc
 
 currently, the only supported boot medium is a disk image. `host/scripts/mkimg`
 (invoked as part of `make`) will create an 80mb single-partition fat32 image
-for this purpose. unfortunately, this will require an interactive `fdisk`
-session (see bolded for what to input):
-
-<pre>
-+ fdisk -e beans/build/bin/temp.img
-fdisk: could not open MBR file /usr/standalone/i386/boot0: No such file or directory
-The signature for this MBR is invalid.
-Would you like to initialize the partition table? [y] <b>y</b>
-Enter 'help' for information
-fdisk:*1> <b>disk</b>
-Disk: beans/build/bin/temp.img       geometry: 650/4/63 [163840 sectors]
-Change disk geometry? [n] <b>n</b>
-fdisk:*1> <b>edit 1</b>
-         Starting       Ending
- #: id  cyl  hd sec -  cyl  hd sec [     start -       size]
-------------------------------------------------------------------------
- 1: 00    0   0   0 -    0   0   0 [         0 -          0] unused
-Partition id ('0' to disable)  [0 - FF]: [0] (? for help) <b>0B</b>
-Do you wish to edit in CHS mode? [n] <b>n</b>
-Partition offset [0 - 163840]: [63] <b>\n</b>
-Partition size [1 - 163777]: [163777] <b>\n</b>
-fdisk:*1> <b>write</b>
-Writing MBR at offset 0.
-fdisk: 1> <b>quit</b>
-</pre>
+for this purpose.
 
 _debugger debugging_
 
