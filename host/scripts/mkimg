@@ -9,6 +9,9 @@ OUT=$(realpath -s $1)
 SYSROOT=$(realpath -s $2)
 IMAGE=${OUT}/beans.img
 FS=${OUT}/fs.img
+MNT=${OUT}/mnt
+KERNEL=${OUT}/beans
+INITRD=${OUT}/ramdisk.img
 # 80mb of 512b blocks
 SECTORS=163840
 BLOCKSIZE=512
@@ -53,16 +56,21 @@ set -x
 # todo: read somewhere that -F doesn't work
 # todo: perhaps look into getting -B to work
 newfs_msdos -F 32 ${DEVICE}
-mkdir ${OUT}/mnt
-mount -t msdos ${DEVICE} ${OUT}/mnt
-# todo: lol this probably isn't right
-# at the very least need to set up fs metadata
-# todo: add boot, kernel, initrd somewhere. im guessing we also need boot config?
-cp -r ${SYSROOT}/. ${OUT}/mnt
-ls ${OUT}/mnt
+mkdir ${MNT}
+mount -t msdos ${DEVICE} ${MNT}
+mkdir ${MNT}/boot
+cp ${KERNEL} ${MNT}/boot
+cp ${INITRD} ${MNT}/boot
+cp -r ${SYSROOT}/. ${MNT}
+# dump sysroot
+if command -v fd &> /dev/null; then
+  fd . ${MNT}
+else
+  find ${MNT} -type f
+fi
 umount ${DEVICE}
 hdiutil detach ${DEVICE}
-rm -r ${OUT}/mnt
+rm -r ${MNT}
 
 # leave fdisk's partition table intact
 dd if=${OUT}/mbr of=${IMAGE} bs=1 count=${PARTITION_TABLE_OFFSET} conv=notrunc

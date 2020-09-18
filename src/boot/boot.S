@@ -119,20 +119,23 @@ no92:
   mov %ax, gdt_descriptor
   lgdtw gdt_descriptor
 
-  // i guess mbr could have loaded this alongside us but
-  // i like this better whatever
+  // load kernel and initrd from fs
+  // lba of first data sector in eax
+  mov (bpb_fats), %ax
+  mull (ebpb_sectors_per_fat)
+  // this is typically 32
+  addw (bpb_reserved_sectors), %ax
+  // relative offset (in sectors) of root cluster
+  movl (ebpb_root_cluster), %ebx
+  subl $2, %ebx
+  // lba of root cluster
+  addl %ebx, %eax
+
   movb $0x10, (dap)
-  // load right after this
-  movl $0x7e00, (dap_dest_addr)
-  movw (boot_partition), %bx
-  // lba is at offset 0x08, put it into dap
-  add $8, %bx
-  // read second block (we are first)
-  addw $1, (%bx)
-  movl (%bx), %ebx
-  mov %ebx, (dap_lba)
-  // todo: lol 4 seems nice for now. resize once we make initrd
-  movw $4, (dap_blocks)
+  movw $1, (dap_blocks)
+  // todo: read somewhere else
+  movl $0x8000, (dap_dest_addr)
+  mov %eax, (dap_lba)
   // retry once
   mov $2, %cx
 read_sector:
@@ -151,6 +154,7 @@ read_sector:
   jmp hang
 
 done_read:
+  jmp hang
   // protected mode
   // do after gdt with no interrupts
   mov %cr0, %eax
@@ -292,7 +296,6 @@ boot_partition:
   .word 0
   .word 0
 
-// todo: verify this is how we want to be doing reads...
 dap:
   .byte 0
   .byte 0
@@ -308,6 +311,7 @@ dap_lba_ext:
   .word 0
   .word 0
 
+// todo: hardcode kernel for now, get from config later?
 kernel_name: .string "beans"
 
 .skip 510-(.-bpb_start), 0

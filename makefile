@@ -178,9 +178,8 @@ $(BIN_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o
 
 # todo: actually make this
 $(BIN_DIR)/ramdisk.img: $(BOOT_BUILD_DIR)/loadk.o $(KERNEL_MOD_BUILD_DIR)/ata.ko
-	echo "hi"
+	touch $@
 
-# todo: set up initrd, kernel and modules in fs
 $(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/ramdisk.img $(BIN_DIR)/beans $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
 	./host/scripts/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
 
