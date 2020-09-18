@@ -65,7 +65,6 @@ ebpb_id:
   // org 0x7c00 (from linker script)
   // real mode, cs:ip = (cs << 4) + ip
   // set cs to next instruction (ljmp is 5 bytes)
-  // ljmp $0x0000, $0x7c05
   ljmp $0x0000, $start
 start:
   // set up seg regs
@@ -129,11 +128,11 @@ no92:
   // lba is at offset 0x08, put it into dap
   add $8, %bx
   // read second block (we are first)
-  add $1, (%bx)
+  addw $1, (%bx)
   movl (%bx), %ebx
   mov %ebx, (dap_lba)
   // todo: lol 4 seems nice for now. resize once we make initrd
-  mov $4, (dap_blocks)
+  movw $4, (dap_blocks)
   // retry once
   mov $2, %cx
 read_sector:

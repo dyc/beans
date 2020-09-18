@@ -41,13 +41,13 @@ check_partition:
 found_boot_partition:
   movw %bx, (boot_partition)
   movb $0x10, (dap)
-  mov $0x7c00, (dap_dest_addr)
+  movl $0x7c00, (dap_dest_addr)
   // lba is at offset 0x08, put it into dap
   add $8, %bx
   movl (%bx), %ebx
   mov %ebx, (dap_lba)
   // read one block
-  mov $1, (dap_blocks)
+  movw $1, (dap_blocks)
   // retry once
   mov $2, %cx
 read_sector:

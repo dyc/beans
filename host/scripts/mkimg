@@ -68,6 +68,6 @@ rm -r ${OUT}/mnt
 dd if=${OUT}/mbr of=${IMAGE} bs=1 count=${PARTITION_TABLE_OFFSET} conv=notrunc
 # pluck (the skip) bootloader _code_ and plop (the seek) it down after bpb/ebpb
 dd if=${OUT}/boot of=${FS} bs=1 skip=${FAT32_BOOT_OFFSET} seek=${FAT32_BOOT_OFFSET} conv=notrunc
-dd if=${FS} of=${IMAGE} bs=${BLOCKSIZE} seek=${BLOCKSIZE} conv=notrunc
+dd if=${FS} of=${IMAGE} bs=${BLOCKSIZE} seek=${PARTITION_OFFSET} conv=notrunc
 rm ${FS}
 file ${IMAGE}
