@@ -7,32 +7,51 @@ if (($# != 2)) || [[ ! -d $1 ]] || [[ ! -d $2 ]]; then
 fi
 OUT=$(realpath -s $1)
 SYSROOT=$(realpath -s $2)
+IMAGE=${OUT}/beans.img
+FS=${OUT}/fs.img
 # 80mb of 512b blocks
 SECTORS=163840
 BLOCKSIZE=512
+# sectors
 PARTITION_OFFSET=63
+# bytes
+# 64 bytes for table + magic word
+PARTITION_TABLE_OFFSET=446
+FAT32_BOOT_OFFSET=90
 
-dd if=/dev/zero of=${OUT}/temp.img count=${SECTORS} bs=${BLOCKSIZE}
-
-# make partition table
+dd if=/dev/zero of=${IMAGE} count=${SECTORS} bs=${BLOCKSIZE}
+# do partition
 # -a=dos to start partition at sector 63 instead of 2048
-# todo: find a non-interactive version of this
-fdisk -a dos -e ${OUT}/temp.img
-# cut out mbr, rest is fs
-dd if=${OUT}/temp.img of=${OUT}/fs.img bs=${BLOCKSIZE} skip=${PARTITION_OFFSET}
-rm ${OUT}/temp.img
+(
+echo "disk"   # edit current drive stats
+echo          # default stats
+echo "edit 1" # first pte
+echo "0c"     # fat32 lba partition id
+echo          # dont edit in chs mode
+echo          # default partition offset (63)
+echo          # default partition size (entire disk)
+echo "flag 1" # mark first pte active
+echo "write"  # mark first pte active
+echo "quit"   # mark first pte active
+) | fdisk -i -a dos -e ${IMAGE}
+# ugh, newfs_msdos on macos doesn't support offsetting via -@
+# so we have to manually cut out and format fs
+dd if=${IMAGE} of=${FS} bs=${BLOCKSIZE} skip=${PARTITION_OFFSET}
 
-# create fat32 on fs.img
-DEVICE=$(echo $(hdiutil attach -nomount ${OUT}/fs.img) | xargs)
+# do fat32
+DEVICE=$(echo $(hdiutil attach -nomount ${FS}) | xargs)
 set +x
-read -p "create beansfs on ${DEVICE} (y/n)? " choice
+read -p "fat32 on ${DEVICE} (y/n)? " choice
 case "${choice}" in
-  y|Y ) echo "here goes :'-)";;
-  n|N ) echo "aw :-("; exit 1;;
-  * ) echo "sorry?"; exit 1;;
+  y|Y ) echo "cool";;
+  n|N ) echo "ok"; exit 1;;
+  * ) echo "what"; exit 1;;
 esac
+# this bit is noisy
 set -x
+# ideally: newfs_msdos -F 32 -@${PARTITION_OFFSET}s -S${BLOCKSIZE} ${DEVICE}
 # todo: read somewhere that -F doesn't work
+# todo: perhaps look into getting -B to work
 newfs_msdos -F 32 ${DEVICE}
 mkdir ${OUT}/mnt
 mount -t msdos ${DEVICE} ${OUT}/mnt
@@ -45,16 +64,10 @@ umount ${DEVICE}
 hdiutil detach ${DEVICE}
 rm -r ${OUT}/mnt
 
-# create boot sector
-dd if=${OUT}/mbr of=${OUT}/boot.img bs=${BLOCKSIZE} count=1
-# todo: move bootloader into fs and remove this
-# bootloader lives right after mbr
-dd if=${OUT}/boot bs=${BLOCKSIZE} count=1 >> ${OUT}/boot.img
-# fill to 1mb
-BOOTEND=$(($(stat -f %z ${OUT}/boot.img)))
-BOOTPAD=$(((${PARTITION_OFFSET}*${BLOCKSIZE})-${BOOTEND}))
-dd if=/dev/zero bs=1 count=${BOOTPAD} >> ${OUT}/boot.img
-
-# create final disk
-cat ${OUT}/boot.img ${OUT}/fs.img > ${OUT}/beans.img
-file ${OUT}/beans.img
+# leave fdisk's partition table intact
+dd if=${OUT}/mbr of=${IMAGE} bs=1 count=${PARTITION_TABLE_OFFSET} conv=notrunc
+# pluck (the skip) bootloader _code_ and plop (the seek) it down after bpb/ebpb
+dd if=${OUT}/boot of=${FS} bs=1 skip=${FAT32_BOOT_OFFSET} seek=${FAT32_BOOT_OFFSET} conv=notrunc
+dd if=${FS} of=${IMAGE} bs=${BLOCKSIZE} seek=${BLOCKSIZE} conv=notrunc
+rm ${FS}
+file ${IMAGE}

@@ -110,6 +110,10 @@ dap_lba_ext:
 .skip 0x01be-(.-mbr_start), 0
 
 // our (only) active partition
+// these are dummy values (a partition
+// starting on the next sector)
+// we'll drop these in favor of what
+// mkimg ends up putting here
 partition1:
   // active
   .byte 0x80

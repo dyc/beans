@@ -1,12 +1,73 @@
-// note to self: dont forget to das as 16 bit:
-// i686-elf-objdump -m i386 -M addr16,data16 -b binary -D build/bin/boot
+// a fat32 bootloader
 .code16
-.global _start
-_start:
+bpb_start:
+  .byte 0
+  .byte 0
+  .byte 0
+bpb_oem:
+  .quad 0
+bpb_bytes_per_sector:
+  .word 0
+bpb_sectors_per_cluster:
+  .byte 0
+bpb_reserved_sectors:
+  .word 0
+bpb_fats:
+  .byte 0
+bpb_dirs:
+  .word 0
+bpb_num_sectors_small:
+  .word 0
+bpb_desc_type:
+  .byte 0
+bpb_sectors_per_fat:
+  .word 0
+bpb_sectors_per_track:
+  .word 0
+bpb_heads:
+  .word 0
+bpb_hidden_sectors:
+  .long 0
+bpb_num_sectors_large:
+  .long 0
+ebpb_sectors_per_fat:
+  .long 0
+ebpb_flags:
+  .word 0
+ebpb_version:
+  .word 0
+ebpb_root_cluster:
+  .long 0
+ebpb_fsinfo_sector:
+  .word 0
+ebpb_backup_sector:
+  .word 0
+ebpb_reserved:
+  .long 0
+  .long 0
+  .long 0
+ebpb_drive_number:
+  .byte 0
+ebpb_flags_windows:
+  .byte 0
+ebpb_signature:
+  .byte 0
+ebpb_volume_id:
+  .long 0
+ebpb_volume_label:
+  .quad 0
+  .byte 0
+  .byte 0
+  .byte 0
+ebpb_id:
+  .quad 0
+
   // org 0x7c00 (from linker script)
   // real mode, cs:ip = (cs << 4) + ip
   // set cs to next instruction (ljmp is 5 bytes)
-  ljmp $0x0000, $0x7c05
+  // ljmp $0x0000, $0x7c05
+  ljmp $0x0000, $start
+start:
   // set up seg regs
   xor %ax, %ax
   mov %ax, %ds
@@ -63,7 +124,7 @@ no92:
   // i like this better whatever
   movb $0x10, (dap)
   // load right after this
-  mov $0x7e00, (dap_dest_addr)
+  movl $0x7e00, (dap_dest_addr)
   movw (boot_partition), %bx
   // lba is at offset 0x08, put it into dap
   add $8, %bx
@@ -248,5 +309,7 @@ dap_lba_ext:
   .word 0
   .word 0
 
-.skip 510-(.-_start), 0
+kernel_name: .string "beans"
+
+.skip 510-(.-bpb_start), 0
 .word 0xaa55
