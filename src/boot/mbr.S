@@ -11,12 +11,9 @@ mbr_start:
   mov %ax, %sp
   mov %ax, %es
 relocate:
-  // bios loads us at 0x7c00 so we need to
-  // relocate and set up/flush cs:ip
-  // 0x0600 seems like a nice place to move to
-  // (location counter set in linker script)
-
-  // words to move (we're 512 bytes)
+  // bios loads us at 0x7c00
+  // relocate ourselves (0x0600 seems nice)
+  // and load vbr to 0x7c00
   mov $0x0100, %cx
   mov $0x7c00, %si
   mov $0x0600, %di
@@ -41,7 +38,7 @@ found_boot_partition:
   movw %bx, (boot_partition)
   movb $0x10, (dap)
   movl $0x7c00, (dap_dest_addr_offset)
-  // lba is at offset 0x08, put it into dap
+  // pte lba is at offset 0x08
   add $8, %bx
   movl (%bx), %ebx
   mov %ebx, (dap_lba)

@@ -154,6 +154,7 @@ read_sector:
   jmp hang
 
 done_read:
+  jmp hang
   // protected mode
   // do after gdt with no interrupts
   mov %cr0, %eax
