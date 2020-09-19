@@ -1,4 +1,5 @@
 // a fat32 bootloader
+  // org 0x7c00 (from linker script)
 .code16
 bpb_start:
   .byte 0
@@ -62,23 +63,25 @@ ebpb_volume_label:
 ebpb_id:
   .quad 0
 
-  // org 0x7c00 (from linker script)
-  // real mode, cs:ip = (cs << 4) + ip
-  // set cs to next instruction (ljmp is 5 bytes)
+  // flush cs:ip
   ljmp $0x0000, $start
 start:
   // set up seg regs
   xor %ax, %ax
   mov %ax, %ds
   mov %ax, %ss
-  // big ol stack (bootloader occupies 0x7c00 - 0x7e00)
+  // big ol stack below us
   mov $0x7c00, %ax
   mov %ax, %sp
-  // e820 mmap will be directed here (0x500 since es is seg reg)
+  // stack base after bda
+  mov $0x500, %ax
+  mov %ax, %bp
+  // e820 mmap will be directed here
   // (bottom of conventional memory, which is the first mb)
   // x/120xb 0x500 to inspect
   mov $0x50, %ax
   mov %ax, %es
+
   // mbr hands us these
   movw %si, (boot_partition)
   mov %dl, (drive_number)
@@ -95,9 +98,7 @@ start:
   // find mmap
   call e820_first
   jc hang
-
   cli
-
   // fast a20 enable, if necessary
   in $0x92, %al
   testb $2, %al
@@ -106,7 +107,6 @@ start:
   and $0xfe, %al
   out %al, $0x92
 no92:
-
   // load gdt
   xor %eax, %eax
   mov %ds, %ax
@@ -134,7 +134,7 @@ no92:
   movb $0x10, (dap)
   movw $1, (dap_blocks)
   // todo: read somewhere else
-  movl $0x8000, (dap_dest_addr)
+  movl $0x8000, (dap_dest_addr_offset)
   mov %eax, (dap_lba)
   // retry once
   mov $2, %cx
@@ -154,7 +154,6 @@ read_sector:
   jmp hang
 
 done_read:
-  jmp hang
   // protected mode
   // do after gdt with no interrupts
   mov %cr0, %eax
@@ -169,8 +168,8 @@ done_read:
   mov %ax, %gs
   mov %ax, %ss
 
-  // flush code segreg
-  ljmp $0x08, $0x7e00
+  // flush and jmp to loaded kernel loader
+  ljmp $0x08, $0x8000
 
 // if first iteration fails then e820 isn't supported
 // and we should indicate fail on return
@@ -287,11 +286,9 @@ gdt_start:
   .byte 0
 gdt_end:
 
-.global drive_number
 drive_number:
   .byte 0
 
-.global boot_partition
 boot_partition:
   .word 0
   .word 0
@@ -301,8 +298,9 @@ dap:
   .byte 0
 dap_blocks:
   .word 0
-dap_dest_addr:
+dap_dest_addr_offset:
   .word 0
+dap_dest_addr_segment:
   .word 0
 dap_lba:
   .word 0

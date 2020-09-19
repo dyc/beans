@@ -2,7 +2,6 @@
 // from an active partition. in our simple system, we'll
 // just load the first (and presumably only) active partition
 .code16
-.global mbr_start
 mbr_start:
   cli
   // zero seg regs
@@ -41,7 +40,7 @@ check_partition:
 found_boot_partition:
   movw %bx, (boot_partition)
   movb $0x10, (dap)
-  movl $0x7c00, (dap_dest_addr)
+  movl $0x7c00, (dap_dest_addr_offset)
   // lba is at offset 0x08, put it into dap
   add $8, %bx
   movl (%bx), %ebx
@@ -77,11 +76,9 @@ boot:
 hang:
   jmp hang
 
-.global drive_number
 drive_number:
   .byte 0
 
-.global boot_partition
 boot_partition:
   .word 0
   .word 0
@@ -94,8 +91,9 @@ dap:
   .byte 0
 dap_blocks:
   .word 0
-dap_dest_addr:
+dap_dest_addr_offset:
   .word 0
+dap_dest_addr_segment:
   .word 0
 dap_lba:
   .word 0

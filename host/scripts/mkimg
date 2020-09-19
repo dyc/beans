@@ -55,7 +55,7 @@ set -x
 # ideally: newfs_msdos -F 32 -@${PARTITION_OFFSET}s -S${BLOCKSIZE} ${DEVICE}
 # todo: read somewhere that -F doesn't work
 # todo: perhaps look into getting -B to work
-newfs_msdos -F 32 ${DEVICE}
+newfs_msdos -F 32 -m 0xf8 ${DEVICE}
 mkdir ${MNT}
 mount -t msdos ${DEVICE} ${MNT}
 mkdir ${MNT}/boot
