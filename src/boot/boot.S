@@ -126,13 +126,14 @@ no92:
   // this is typically 32
   addw (bpb_reserved_sectors), %ax
 
-  // todo: do something nicer here
   mov (boot_partition), %bx
   add $8, %bx
   addl (%ebx), %eax
-  // todo: including this overflows boot block
+  // todo: technically i think we should factor in
+  // offset of root cluster, but including this
+  // overflows boot block so let's just assume
+  // root is first sector for now
   // movw %ax, %bx
-
   // relative offset (in sectors) of root cluster
   // movl (ebpb_root_cluster), %eax
   // sub $2, %eax
@@ -143,7 +144,7 @@ no92:
 
   movb $0x10, (dap)
   movw $1, (dap_blocks)
-  // todo: read somewhere else
+  // todo: read somewhere else?
   movl $0x8000, (dap_dest_addr_offset)
   mov %eax, (dap_lba)
   // retry once
@@ -164,6 +165,11 @@ read_sector:
   jmp hang
 
 done_read:
+  // todo: we're gonna need more space, but
+  // we should find kernel loader in root dir here
+  // will likely have to read more than the first block
+  // and move loader somewhere to jmp to
+
   // protected mode
   // do after gdt with no interrupts
   mov %cr0, %eax

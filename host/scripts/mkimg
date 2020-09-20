@@ -25,10 +25,11 @@ dd if=/dev/zero of=${IMAGE} count=${SECTORS} bs=${BLOCKSIZE}
 # do partition
 # -a=dos to start partition at sector 63 instead of 2048
 (
+echo "y"      # write new MBR and PT
 echo "disk"   # edit current drive stats
 echo          # default stats
 echo "edit 1" # first pte
-echo "0C"     # fat32 lba partition id
+echo          # fat32 lba partition id (0c)
 echo          # dont edit in chs mode
 echo          # default partition offset (63)
 echo          # default partition size (entire disk)
@@ -49,7 +50,6 @@ case "${choice}" in
 esac
 # this bit is noisy
 set -x
-# todo: i think this changes partition table, check on that?
 diskutil eraseVolume FAT32 BEANSFS ${DEVICE}
 # diskutil leaves it mounted
 umount ${DEVICE}
@@ -68,6 +68,19 @@ fi
 umount ${DEVICE}
 hdiutil detach ${DEVICE}
 rm -r ${MNT}
+# change partition id back to lba
+# todo: this seems like a nit. or we could
+# go back to newfs_msdos on fs image
+# which can't do the overwrite
+(
+echo "edit 1" # first pte
+echo "0c"     # fat32 lba partition id
+echo          # dont edit in chs mode
+echo          # default partition offset (63)
+echo          # default partition size (entire disk)
+echo "write"  # mark first pte active
+echo "quit"   # mark first pte active
+) | fdisk -a dos -e ${IMAGE}
 
 # leave fdisk's partition table intact
 dd if=${OUT}/mbr of=${IMAGE} bs=1 count=${PARTITION_TABLE_OFFSET} conv=notrunc

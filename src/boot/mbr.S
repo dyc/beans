@@ -65,6 +65,7 @@ boot:
   mov 0x7dfe, %bx
   cmp $0xaa55, %bx
   jne hang
+  // todo: do we wanna hand off boot pte?
   movw (boot_partition), %si
   mov (drive_number), %dl
   // hold onto ur butts
@@ -118,7 +119,6 @@ partition1_start_chs:
   .byte 0x01
   .byte 0x00
 // type (fat32 lba)
-// todo: seems like diskutil overwrites fdisk (or at least this gets set back to 0x0b somewhere in mkimg)
 partition1_type:
   .byte 0x0c
 // chs addr of last sector (650/4/63)
@@ -127,7 +127,6 @@ partition1_end_chs:
   .byte 0xFF
   .byte 0x8a
 // lba of first sector
-// todo: need to hand this off to bootloader somehow. is this the right way to do that?
 partition1_start_lba:
   .byte 0x01
   .byte 0x00
