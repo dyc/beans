@@ -8,7 +8,6 @@ fi
 OUT=$(realpath -s $1)
 SYSROOT=$(realpath -s $2)
 IMAGE=${OUT}/beans.img
-FS=${OUT}/fs.img
 MNT=${OUT}/mnt
 KERNEL=${OUT}/beans
 INITRD=${OUT}/ramdisk.img
@@ -37,12 +36,10 @@ echo "flag 1" # mark first pte active
 echo "write"  # mark first pte active
 echo "quit"   # mark first pte active
 ) | fdisk -i -a dos -e ${IMAGE}
-# ugh, newfs_msdos on macos doesn't support offsetting via -@
-# so we have to manually cut out and format fs
-dd if=${IMAGE} of=${FS} bs=${BLOCKSIZE} skip=${PARTITION_OFFSET}
 
 # do fat32
-DEVICE=$(echo $(hdiutil attach -nomount ${FS}) | xargs)
+# hdiutil claims its output is stable :-)
+DEVICE=$(hdiutil attach -nomount ${IMAGE} | grep "FAT_32" | cut -f1 - | cat | xargs)
 set +x
 read -p "fat32 on ${DEVICE} (y/n)? " choice
 case "${choice}" in
@@ -52,10 +49,9 @@ case "${choice}" in
 esac
 # this bit is noisy
 set -x
-# ideally: newfs_msdos -F 32 -@${PARTITION_OFFSET}s -S${BLOCKSIZE} ${DEVICE}
-# todo: read somewhere that -F doesn't work
-# todo: perhaps look into getting -B to work
-newfs_msdos -F 32 -m 0xf8 ${DEVICE}
+diskutil eraseVolume FAT32 BEANSFS ${DEVICE}
+# diskutil leaves it mounted
+umount ${DEVICE}
 mkdir ${MNT}
 mount -t msdos ${DEVICE} ${MNT}
 mkdir ${MNT}/boot
@@ -75,7 +71,5 @@ rm -r ${MNT}
 # leave fdisk's partition table intact
 dd if=${OUT}/mbr of=${IMAGE} bs=1 count=${PARTITION_TABLE_OFFSET} conv=notrunc
 # pluck (the skip) bootloader _code_ and plop (the seek) it down after bpb/ebpb
-dd if=${OUT}/boot of=${FS} bs=1 skip=${FAT32_BOOT_OFFSET} seek=${FAT32_BOOT_OFFSET} conv=notrunc
-dd if=${FS} of=${IMAGE} bs=${BLOCKSIZE} seek=${PARTITION_OFFSET} conv=notrunc
-rm ${FS}
+dd if=${OUT}/boot of=${IMAGE} bs=1 skip=${FAT32_BOOT_OFFSET} seek=$((${BLOCKSIZE}*${PARTITION_OFFSET}+${FAT32_BOOT_OFFSET})) conv=notrunc
 file ${IMAGE}
