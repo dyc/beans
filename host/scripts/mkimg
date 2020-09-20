@@ -28,7 +28,7 @@ dd if=/dev/zero of=${IMAGE} count=${SECTORS} bs=${BLOCKSIZE}
 echo "disk"   # edit current drive stats
 echo          # default stats
 echo "edit 1" # first pte
-echo "0c"     # fat32 lba partition id
+echo "0C"     # fat32 lba partition id
 echo          # dont edit in chs mode
 echo          # default partition offset (63)
 echo          # default partition size (entire disk)
@@ -49,6 +49,7 @@ case "${choice}" in
 esac
 # this bit is noisy
 set -x
+# todo: i think this changes partition table, check on that?
 diskutil eraseVolume FAT32 BEANSFS ${DEVICE}
 # diskutil leaves it mounted
 umount ${DEVICE}

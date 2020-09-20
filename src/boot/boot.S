@@ -121,15 +121,25 @@ no92:
 
   // load kernel and initrd from fs
   // lba of first data sector in eax
-  mov (bpb_fats), %ax
+  movb (bpb_fats), %al
   mull (ebpb_sectors_per_fat)
   // this is typically 32
   addw (bpb_reserved_sectors), %ax
+
+  // todo: do something nicer here
+  mov (boot_partition), %bx
+  add $8, %bx
+  addl (%ebx), %eax
+  // todo: including this overflows boot block
+  // movw %ax, %bx
+
   // relative offset (in sectors) of root cluster
-  movl (ebpb_root_cluster), %ebx
-  subl $2, %ebx
+  // movl (ebpb_root_cluster), %eax
+  // sub $2, %eax
+  // movb (bpb_sectors_per_cluster), %cl
+  // mulw %cx
   // lba of root cluster
-  addl %ebx, %eax
+  // addl %ebx, %eax
 
   movb $0x10, (dap)
   movw $1, (dap_blocks)
@@ -244,11 +254,9 @@ e820_fail:
 hang:
   jmp hang
 
-.global e820_count
 e820_count:
   .byte 0
 
-.global lower_mem
 lower_mem:
   .byte 0
   .byte 0

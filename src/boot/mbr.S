@@ -112,22 +112,29 @@ dap_lba_ext:
 partition1:
   // active
   .byte 0x80
-  // chs addr of first sector
+// chs addr of first sector
+partition1_start_chs:
   .byte 0x00
   .byte 0x01
   .byte 0x00
-  // type (fat32 lba)
+// type (fat32 lba)
+// todo: seems like diskutil overwrites fdisk (or at least this gets set back to 0x0b somewhere in mkimg)
+partition1_type:
   .byte 0x0c
-  // chs addr of last sector (650/4/63)
+// chs addr of last sector (650/4/63)
+partition1_end_chs:
   .byte 0x04
   .byte 0xFF
   .byte 0x8a
-  // lba of first sector
+// lba of first sector
+// todo: need to hand this off to bootloader somehow. is this the right way to do that?
+partition1_start_lba:
   .byte 0x01
   .byte 0x00
   .byte 0x00
   .byte 0x00
-  // num sectors (163840)
+// num sectors (163840)
+partition1_size:
   .byte 0x00
   .byte 0x80
   .byte 0x02
