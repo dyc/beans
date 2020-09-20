@@ -126,6 +126,9 @@ no92:
   // this is typically 32
   addw (bpb_reserved_sectors), %ax
 
+  // account for partition LBA offset.
+  // todo: i think this is right? makes sense to me
+  // but should double check...
   mov (boot_partition), %bx
   add $8, %bx
   addl (%ebx), %eax
