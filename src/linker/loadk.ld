@@ -1,7 +1,7 @@
 OUTPUT_FORMAT(binary)
 SECTIONS {
-  . = 0x7c00;
-  .boot : {
+  . = 0x8400;
+  .loadk : {
     *(.text .rodata .data .bss)
   }
 }

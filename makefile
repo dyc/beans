@@ -173,14 +173,11 @@ $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.S
 $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -T $(LINKER_SRC_DIR)/$(@F).ld -o $@ $^
 
-$(BIN_DIR)/boot: $(BOOT_BUILD_DIR)/boot.o
-	$(LD) -T $(LINKER_SRC_DIR)/boot.ld -o $@ $^
-
 # todo: actually make this
 $(BIN_DIR)/ramdisk.img: $(BOOT_BUILD_DIR)/loadk.o $(KERNEL_MOD_BUILD_DIR)/ata.ko
 	touch $@
 
-$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/ramdisk.img $(BIN_DIR)/beans $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
+$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/loadloadk $(BIN_DIR)/loadk $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
 	./host/scripts/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
 
 $(HOST_BUILD_DIR)/%.dylib: host/%.c

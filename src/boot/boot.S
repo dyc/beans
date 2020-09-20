@@ -83,7 +83,7 @@ start:
   mov %ax, %es
 
   // mbr hands us these
-  movw %si, (boot_partition)
+  movw %si, (partition_table_entry)
   mov %dl, (drive_number)
 
   // get available memory below 0x0A0000 (640kb)
@@ -119,36 +119,17 @@ no92:
   mov %ax, gdt_descriptor
   lgdtw gdt_descriptor
 
-  // load kernel and initrd from fs
-  // lba of first data sector in eax
-  movb (bpb_fats), %al
-  mull (ebpb_sectors_per_fat)
-  // this is typically 32
-  addw (bpb_reserved_sectors), %ax
-
-  // account for partition LBA offset.
-  // todo: i think this is right? makes sense to me
-  // but should double check...
-  mov (boot_partition), %bx
-  add $8, %bx
-  addl (%ebx), %eax
-  // todo: technically i think we should factor in
-  // offset of root cluster, but including this
-  // overflows boot block so let's just assume
-  // root is first sector for now
-  // movw %ax, %bx
-  // relative offset (in sectors) of root cluster
-  // movl (ebpb_root_cluster), %eax
-  // sub $2, %eax
-  // movb (bpb_sectors_per_cluster), %cl
-  // mulw %cx
-  // lba of root cluster
-  // addl %ebx, %eax
-
+  // read fsinfo block and loadloadk
+  // into memory right after us
   movb $0x10, (dap)
-  movw $1, (dap_blocks)
-  // todo: read somewhere else?
-  movl $0x8000, (dap_dest_addr_offset)
+  movw $2, (dap_blocks)
+  movl $0x7e00, (dap_dest_addr_offset)
+  // get this partition's lba offset
+  mov (partition_table_entry), %bx
+  add $8, %bx
+  movl (%ebx), %eax
+  // start read after boot (this) block
+  addb $1, %al
   mov %eax, (dap_lba)
   // retry once
   mov $2, %cx
@@ -168,11 +149,14 @@ read_sector:
   jmp hang
 
 done_read:
-  // todo: we're gonna need more space, but
-  // we should find kernel loader in root dir here
-  // will likely have to read more than the first block
-  // and move loader somewhere to jmp to
-
+  // todo: this whole bit with how we get to
+  // loadloadk kinda stinks :-(
+  leaw bpb_start, %bx
+  movw $0x8400, %di
+  movb (drive_number), %al
+  push $loadloadk_ret
+  jmp 0x8000
+loadloadk_ret:
   // protected mode
   // do after gdt with no interrupts
   mov %cr0, %eax
@@ -188,7 +172,7 @@ done_read:
   mov %ax, %ss
 
   // flush and jmp to loaded kernel loader
-  ljmp $0x08, $0x8000
+  ljmp $0x08, $0x8400
 
 // if first iteration fails then e820 isn't supported
 // and we should indicate fail on return
@@ -306,7 +290,7 @@ gdt_end:
 drive_number:
   .byte 0
 
-boot_partition:
+partition_table_entry:
   .word 0
   .word 0
 
@@ -325,9 +309,6 @@ dap_lba:
 dap_lba_ext:
   .word 0
   .word 0
-
-// todo: hardcode kernel for now, get from config later?
-kernel_name: .string "beans"
 
 .skip 510-(.-bpb_start), 0
 .word 0xaa55

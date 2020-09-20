@@ -22,7 +22,7 @@ relocate:
 
 start_check_partition:
   mov %dl, (drive_number)
-  lea partition1, %bx
+  leaw partition1, %bx
   mov $4, %cx
 check_partition:
   // check for activeness
