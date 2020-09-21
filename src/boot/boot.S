@@ -154,6 +154,7 @@ done_read:
   leaw bpb_start, %bx
   movw $0x8400, %di
   movb (drive_number), %al
+  // "call" loadloadk, which will put loadk at 0x8400
   push $loadloadk_ret
   jmp 0x8000
 loadloadk_ret:
@@ -171,7 +172,7 @@ loadloadk_ret:
   mov %ax, %gs
   mov %ax, %ss
 
-  // flush and jmp to loaded kernel loader
+  // flush and jmp to loaded loadk
   ljmp $0x08, $0x8400
 
 // if first iteration fails then e820 isn't supported
