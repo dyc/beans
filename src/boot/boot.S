@@ -73,8 +73,8 @@ start:
   // big ol stack below us
   mov $0x7c00, %ax
   mov %ax, %sp
-  // stack base after bda
-  mov $0x500, %ax
+  // stack base after bda and mbr
+  mov $0x800, %ax
   mov %ax, %bp
   // e820 mmap will be directed here
   // (bottom of conventional memory, which is the first mb)
@@ -87,8 +87,6 @@ start:
   mov %dl, (drive_number)
 
   // get available memory below 0x0A0000 (640kb)
-  // error status returned in cf so clear it
-  clc
   // returns kb from 0 (ivt and bda in first ~1kb)
   // in %ax (probably 639, ~1kb for ebda)
   int $0x12
@@ -133,47 +131,26 @@ no92:
   mov %eax, (dap_lba)
   // retry once
   mov $2, %cx
-read_sector:
+read:
   mov (drive_number), %dl
   lea dap, %si
   // extended (lba) read
   mov $0x42, %ah
   int $0x13
-  jnc done_read
+  jnc read_done
   dec %cx
   jz hang
   // else reset disk and try again
   xor %ah, %ah
   int $0x13
-  jnc read_sector
+  jnc read
   jmp hang
 
-done_read:
-  // todo: this whole bit with how we get to
-  // loadloadk kinda stinks :-(
-  leaw bpb_start, %bx
-  movw $0x8400, %di
-  movb (drive_number), %al
-  // "call" loadloadk, which will put loadk at 0x8400
-  push $loadloadk_ret
+read_done:
+  pushw $bpb_start
+  push (drive_number)
+  push (e820_count)
   jmp 0x8000
-loadloadk_ret:
-  // protected mode
-  // do after gdt with no interrupts
-  mov %cr0, %eax
-  or $1, %al
-  mov %eax, %cr0
-
-  // flush data segregs
-  mov $0x10, %ax
-  mov %ax, %ds
-  mov %ax, %es
-  mov %ax, %fs
-  mov %ax, %gs
-  mov %ax, %ss
-
-  // flush and jmp to loaded loadk
-  ljmp $0x08, $0x8400
 
 // if first iteration fails then e820 isn't supported
 // and we should indicate fail on return
@@ -188,17 +165,17 @@ e820_first:
   // request 24 bytes
   mov $24, %ecx
   int $0x15
-  jc e820_fail
+  jc hang
   mov $0x534d4150, %edx
   cmp %edx, %eax
-  jne e820_fail
+  jne hang
   // check cf, magic in eax, nonzero ebx for success
-  jc e820_fail
+  jc hang
   mov $0x534d4150, %edx
   cmp %edx, %eax
-  jne e820_fail
+  jne hang
   test %ebx, %ebx
-  je e820_fail
+  je hang
   jmp e820_maybe_ingest
 
 e820_next:
@@ -239,10 +216,6 @@ e820_next_or_done:
 
 e820_done:
   clc
-  ret
-
-e820_fail:
-  stc
   ret
 
 hang:

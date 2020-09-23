@@ -6,8 +6,10 @@
 // clobbery :'-)
 .code16
 loadloadk:
-  movw %di, (dap_dest_addr_offset)
-  movb %al, (drive_number)
+  pop (e820_count)
+  pop (drive_number)
+  popw %bx
+  movw $0x8400, (dap_dest_addr_offset)
 
   xor %ax, %ax
   // clear ds, es for cmpstr
@@ -36,7 +38,7 @@ read_root_cluster:
   addl %ecx, %eax
   mov %eax, (dap_lba)
   mov %eax, (root_cluster_lba)
-  call read_sector
+  call read
 
 find_boot_dir:
   mov (dap_dest_addr_offset), %si
@@ -58,7 +60,7 @@ read_boot_cluster:
   // we have lba of root cluster in dap_lba
   // so add lba(boot's cluster number)
   addl %eax, (dap_lba)
-  call read_sector
+  call read
 
 find_loadk_file:
   mov (dap_dest_addr_offset), %si
@@ -82,15 +84,31 @@ read_loadk:
   // so add lba(loadk's cluster number)
   addl (root_cluster_lba), %eax
   mov %eax, (dap_lba)
-  call read_sector
+  call read
 
-// at this point we'd loaded loadk to where %di was
-// pointing. we're done :-)
-// todo: might need utilize file size here if loadk gets large
-loadloadk_done:
-  ret
+  // protected mode
+  // do after gdt with no interrupts
+  mov %cr0, %eax
+  or $1, %al
+  mov %eax, %cr0
 
-read_sector:
+  // flush data segregs
+  mov $0x10, %ax
+  mov %ax, %ds
+  mov %ax, %es
+  mov %ax, %fs
+  mov %ax, %gs
+  mov %ax, %ss
+
+  pushl $0x500
+  xor %eax, %eax
+  mov (e820_count), %al
+  push %eax
+  pushl $hang
+  // flush and jmp to loaded loadk
+  ljmp $0x08, $0x8400
+
+read:
   // retry once
   mov $2, %cx
   movb $0x10, (dap)
@@ -106,7 +124,7 @@ read_sector:
   // else reset disk and try again
   xor %ah, %ah
   int $0x13
-  jnc read_sector
+  jnc read
   jmp hang
 read_done:
   ret
@@ -142,6 +160,9 @@ dap_lba:
 dap_lba_ext:
   .word 0
   .word 0
+
+e820_count:
+  .byte 0
 
 // save the original lba so we can
 // use it to calculate correct offsets

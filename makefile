@@ -34,6 +34,7 @@ LINKER_SRC_DIR:=$(SRC_DIR)/linker
 #### bootloader ####
 MBR_LINKER_SCRIPT=$(LINKER_SRC_DIR)/mbr.ld
 BOOT_LINKER_SCRIPT=$(LINKER_SRC_DIR)/boot.ld
+BCFLAGS:=-Os -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror
 
 #### kernel ####
 KCFLAGS:=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
@@ -164,8 +165,7 @@ $(BIN_DIR)/beans: $(KERNEL_OBJS) $(KERNEL_LIB_OBJS) $(LIB_OBJS)
 	$(CC) -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
 
 $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.c
-	# small pls
-	$(CC) -c -Os $< -o $@
+	$(CC) $(BCFLAGS) -c $< -o $@
 
 $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.S
 	$(AS) $< -o $@
