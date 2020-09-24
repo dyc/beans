@@ -188,7 +188,3 @@ gdb: debug
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
-
-.PHONY: todo
-todo:
-	./host/scripts/todo
