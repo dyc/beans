@@ -82,6 +82,13 @@ load_loadk:
   mov %eax, (dap_lba)
   mov $2, %cx
   call eread
+// todo: all of these :-)
+find_config_file:
+find_config_file_loop:
+find_kernel_file:
+find_kernel_file_loop:
+find_ramdisk_file:
+find_ramdisk_file_loop:
 
   // protected mode
   // do after gdt with no interrupts
@@ -164,4 +171,8 @@ boot_dir: .ascii "BOOT"
 .equ boot_dir_strlen, .-boot_dir
 loadk_file: .ascii "LOADK"
 .equ loadk_file_strlen, .-loadk_file
+config_file: .ascii "CONFIG"
+.equ config_file_strlen, .-config_file
+ramdisk_file: .ascii "RAMDISK"
+.equ ramdisk_file_strlen, .-ramdisk_file
 .skip 512-(.-loadloadk), 0
