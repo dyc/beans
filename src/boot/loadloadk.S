@@ -34,8 +34,7 @@ load_root_cluster:
   addl %ecx, %eax
   mov %eax, (dap_lba)
   mov %eax, (root_cluster_lba)
-  mov $2, %cx
-  call eread
+  call eread_start
 find_boot_dir:
   mov (dap_dest_addr_offset), %si
   mov $boot_dir, %di
@@ -56,18 +55,31 @@ load_boot_cluster:
   // we have lba of root cluster in dap_lba
   // so add lba(boot's cluster number)
   addl %eax, (dap_lba)
-  mov $2, %cx
-  call eread
-find_loadk:
+  call eread_start
+  // find each of loadk, kernel and ramdisk
+  mov $3, %dh
+find_files:
   mov (dap_dest_addr_offset), %si
+find_files_loop:
   mov $loadk_file, %di
-find_loadk_loop:
   movb $loadk_file_strlen, %cl
   call cmpstr
-  je load_loadk
+  je found_file_common
+
+  mov $kernel_file, %di
+  movb $kernel_file_strlen, %cl
+  call cmpstr
+  je found_file_common
+
+  mov $ramdisk_file, %di
+  movb $ramdisk_file_strlen, %cl
+  call cmpstr
+  je found_file_common
+
+  // no match
   add $0x20, %si
-  jmp find_loadk_loop
-load_loadk:
+  jmp find_files_loop
+found_file_common:
   // get cluster number from dirent
   movw 0x14(%si), %ax
   shl $16, %eax
@@ -79,19 +91,40 @@ load_loadk:
   // we have lba of root cluster in dap_lba
   // so add lba(loadk's cluster number)
   addl (root_cluster_lba), %eax
+  // todo: this
+  // get size in sectors
+  movl 0x1c(%si), %ecx
+  shr $9, %ecx
+found_loadk:
+  mov %eax, (loadk_lba)
+  mov %ecx, (loadk_size)
+  jmp find_next_or_done
+found_kernel:
+  mov %eax, (kernel_lba)
+  mov %ecx, (kernel_size)
+  jmp find_next_or_done
+found_ramdisk:
+  mov %eax, (ramdisk_lba)
+  mov %ecx, (ramdisk_size)
+  jmp find_next_or_done
+find_next_or_done:
+  dec %dh
+  jz load_loadk
+  add $0x20, %si
+  jmp find_files
+// todo: use size to calculate dest addr for each of these
+load_loadk:
+  mov (loadk_lba), %eax
   mov %eax, (dap_lba)
-  mov $2, %cx
-  call eread
-// todo: all of these :-)
-find_config:
-find_config_loop:
-load_config:
-find_kernel:
-find_kernel_loop:
+  call eread_start
 load_kernel:
-find_ramdisk:
-find_ramdisk_loop:
+  mov (kernel_lba), %eax
+  mov %eax, (dap_lba)
+  call eread_start
 load_ramdisk:
+  mov (ramdisk_lba), %eax
+  mov %eax, (dap_lba)
+  call eread_start
 
   // protected mode
   // do after gdt with no interrupts
@@ -113,6 +146,8 @@ load_ramdisk:
   // flush and jmp to loaded loadk
   ljmp $0x08, $0x8400
 
+eread_start:
+  mov $2, %cx
 eread:
   lea dap, %si
   mov (drive_number), %dl
@@ -169,13 +204,29 @@ e820_count:
 root_cluster_lba:
   .word 0
   .word 0
+loadk_lba:
+  .word 0
+  .word 0
+kernel_lba:
+  .word 0
+  .word 0
+ramdisk_lba:
+  .word 0
+  .word 0
+loadk_size:
+  .byte 0
+kernel_size:
+  .byte 0
+ramdisk_size:
+  .byte 0
 
 boot_dir: .ascii "BOOT"
 .equ boot_dir_strlen, .-boot_dir
 loadk_file: .ascii "LOADK"
 .equ loadk_file_strlen, .-loadk_file
-config_file: .ascii "CONFIG"
-.equ config_file_strlen, .-config_file
+// todo: maybe get this from a config instead
+kernel_file: .ascii "BEANS"
+.equ kernel_file_strlen, .-kernel_file
 ramdisk_file: .ascii "RAMDISK"
 .equ ramdisk_file_strlen, .-ramdisk_file
 .skip 512-(.-loadloadk), 0
