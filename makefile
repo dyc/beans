@@ -31,8 +31,11 @@ LINKER_SRC_DIR:=$(SRC_DIR)/linker
 .SECONDARY:
 
 #### bootloader ####
-MBR_LINKER_SCRIPT=$(LINKER_SRC_DIR)/mbr.ld
-BOOT_LINKER_SCRIPT=$(LINKER_SRC_DIR)/boot.ld
+BOOT_OBJS:=$(patsubst %.S,%.o,$(wildcard $(BOOT_SRC_DIR)/*.S))
+BOOT_OBJS+=$(patsubst %.c,%.o,$(wildcard $(BOOT_SRC_DIR)/*.c))
+BOOT_OBJS:=$(patsubst $(BOOT_SRC_DIR)/%,$(BOOT_BUILD_DIR)/%,$(BOOT_OBJS))
+BOOT_BINS:=$(patsubst %.o,%,$(BOOT_OBJS))
+BOOT_BINS:=$(patsubst $(BOOT_BUILD_DIR)/%,$(BIN_DIR)/%,$(BOOT_BINS))
 BCFLAGS:=-Os -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror
 
 #### kernel ####
@@ -94,9 +97,12 @@ debug: KMODCFLAGS+=-g
 debug: all
 
 # directories
-$(BOOT_BUILD_DIR)/mbr.o: | $(BOOT_BUILD_DIR)
-$(BOOT_BUILD_DIR)/boot.o: | $(BOOT_BUILD_DIR)
+$(BOOT_OBJS): | $(BOOT_BUILD_DIR)
 $(BOOT_BUILD_DIR):
+	mkdir -p $@
+
+$(BOOT_BINS): | $(BIN_DIR)
+$(BIN_DIR):
 	mkdir -p $@
 
 $(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNEL_ASM_BUILD_DIR)
@@ -120,12 +126,6 @@ $(LIB_BUILD_DIR):
 
 $(LIBC_OBJS): | $(LIBC_BUILD_DIR)
 $(LIBC_BUILD_DIR):
-	mkdir -p $@
-
-$(BIN_DIR)/mbr: | $(BIN_DIR)
-$(BIN_DIR)/boot: | $(BIN_DIR)
-$(BIN_DIR)/beans: | $(BIN_DIR)
-$(BIN_DIR):
 	mkdir -p $@
 
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
@@ -172,7 +172,7 @@ $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 $(BIN_DIR)/ramdisk.img: $(BOOT_BUILD_DIR)/loadk.o $(KERNEL_MOD_BUILD_DIR)/ata.ko
 	touch $@
 
-$(BIN_DIR)/beans.img: $(BIN_DIR)/mbr $(BIN_DIR)/boot $(BIN_DIR)/loadloadk $(BIN_DIR)/loadk $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
+$(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
 	./host/scripts/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
 
 .PHONY: run

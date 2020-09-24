@@ -1,22 +1,19 @@
-// org 0x8200 (from linker script)
-
 // given addr of bpb/ebpb in %bx,
 // and driver number in %al
 // loads /boot/loadk into memory at %di
 // clobbery :'-)
+// org 0x8200 (from linker script)
 .code16
 loadloadk:
   pop (e820_count)
   pop (drive_number)
   popw %bx
   movw $0x8400, (dap_dest_addr_offset)
-
   xor %ax, %ax
   // clear ds, es for cmpstr
   mov %ax, %ds
   mov %ax, %es
-
-read_root_cluster:
+load_root_cluster:
   // bpb_fats
   movb 0x10(%bx), %al
   // ebpb_sectors_per_fat
@@ -27,7 +24,6 @@ read_root_cluster:
   // could also use pte's lba: 8(pte)
   addl 0x1c(%bx), %eax
   movw %ax, %cx
-
   // relative offset (in sectors) of root cluster
   movl 0x2c(%bx), %eax
   sub $2, %eax
@@ -38,8 +34,8 @@ read_root_cluster:
   addl %ecx, %eax
   mov %eax, (dap_lba)
   mov %eax, (root_cluster_lba)
-  call read
-
+  mov $2, %cx
+  call eread
 find_boot_dir:
   mov (dap_dest_addr_offset), %si
   mov $boot_dir, %di
@@ -48,7 +44,7 @@ find_boot_dir_loop:
   add $0x20, %si
   call cmpstr
   jne find_boot_dir_loop
-read_boot_cluster:
+load_boot_cluster:
   // get cluster number from dirent
   movw 0x14(%si), %ax
   shl $16, %eax
@@ -60,18 +56,18 @@ read_boot_cluster:
   // we have lba of root cluster in dap_lba
   // so add lba(boot's cluster number)
   addl %eax, (dap_lba)
-  call read
-
+  mov $2, %cx
+  call eread
 find_loadk_file:
   mov (dap_dest_addr_offset), %si
   mov $loadk_file, %di
 find_loadk_file_loop:
   movb $loadk_file_strlen, %cl
   call cmpstr
-  je read_loadk
+  je load_loadk
   add $0x20, %si
   jmp find_loadk_file_loop
-read_loadk:
+load_loadk:
   // get cluster number from dirent
   movw 0x14(%si), %ax
   shl $16, %eax
@@ -84,14 +80,14 @@ read_loadk:
   // so add lba(loadk's cluster number)
   addl (root_cluster_lba), %eax
   mov %eax, (dap_lba)
-  call read
+  mov $2, %cx
+  call eread
 
   // protected mode
   // do after gdt with no interrupts
   mov %cr0, %eax
   or $1, %al
   mov %eax, %cr0
-
   // flush data segregs
   mov $0x10, %ax
   mov %ax, %ds
@@ -99,7 +95,6 @@ read_loadk:
   mov %ax, %fs
   mov %ax, %gs
   mov %ax, %ss
-
   pushl $0x500
   xor %eax, %eax
   mov (e820_count), %al
@@ -108,27 +103,21 @@ read_loadk:
   // flush and jmp to loaded loadk
   ljmp $0x08, $0x8400
 
-read:
-  // retry once
-  mov $2, %cx
-  movb $0x10, (dap)
-  movw $1, (dap_blocks)
-  mov (drive_number), %dl
+eread:
   lea dap, %si
-  // extended (lba) read
+  mov (drive_number), %dl
   mov $0x42, %ah
   int $0x13
-  jnc read_done
+  jnc eread_done
   dec %cx
   jz hang
-  // else reset disk and try again
+  // reset and try again
   xor %ah, %ah
   int $0x13
-  jnc read
+  jnc eread
   jmp hang
-read_done:
+eread_done:
   ret
-
 cmpstr:
   push %si
   push %di
@@ -138,7 +127,6 @@ cmpstr:
   pop %di
   pop %si
   ret
-
 hang:
   jmp hang
 
@@ -146,10 +134,11 @@ drive_number:
   .byte 0
 
 dap:
-  .byte 0
+  .byte 0x10
   .byte 0
 dap_blocks:
-  .word 0
+  .byte 0x01
+  .byte 0
 dap_dest_addr_offset:
   .word 0
 dap_dest_addr_segment:

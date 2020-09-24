@@ -1,5 +1,5 @@
 // a fat32 bootloader
-  // org 0x7c00 (from linker script)
+// org 0x7c00 (from linker script)
 .code16
 bpb_start:
   .byte 0
@@ -66,22 +66,19 @@ ebpb_id:
   // flush cs:ip
   ljmp $0x0000, $start
 start:
-  // set up seg regs
   xor %ax, %ax
   mov %ax, %ds
   mov %ax, %ss
-  // big ol stack below us
+  // big ol stack below us with
+  // stack base after bda and mbr
   mov $0x7c00, %ax
   mov %ax, %sp
-  // stack base after bda and mbr
   mov $0x800, %ax
   mov %ax, %bp
   // e820 mmap will be directed here
-  // (bottom of conventional memory, which is the first mb)
-  // x/120xb 0x500 to inspect
+  // bottom of conventional memory
   mov $0x50, %ax
   mov %ax, %es
-
   // mbr hands us these
   movw %si, (partition_table_entry)
   mov %dl, (drive_number)
@@ -90,7 +87,6 @@ start:
   // returns kb from 0 (ivt and bda in first ~1kb)
   // in %ax (probably 639, ~1kb for ebda)
   int $0x12
-  // stop if error
   jc hang
   mov %ax, (lower_mem)
   // find mmap
@@ -105,12 +101,11 @@ start:
   and $0xfe, %al
   out %al, $0x92
 no92:
-  // load gdt
+  // lgdt
   xor %eax, %eax
   mov %ds, %ax
   shl $4, %eax
   add $gdt_start, %eax
-  // init offset and size in descriptor
   mov %eax, gdt_descriptor + 2
   mov $gdt_end, %eax
   sub $gdt_start, %eax
@@ -119,8 +114,6 @@ no92:
 
   // read fsinfo block and loadloadk
   // into memory right after us
-  movb $0x10, (dap)
-  movw $2, (dap_blocks)
   movl $0x7e00, (dap_dest_addr_offset)
   // get this partition's lba offset
   mov (partition_table_entry), %bx
@@ -129,24 +122,21 @@ no92:
   // start read after boot (this) block
   addb $1, %al
   mov %eax, (dap_lba)
-  // retry once
   mov $2, %cx
-read:
-  mov (drive_number), %dl
+eread:
   lea dap, %si
-  // extended (lba) read
+  mov (drive_number), %dl
   mov $0x42, %ah
   int $0x13
-  jnc read_done
+  jnc jmp_loadloadk
   dec %cx
   jz hang
-  // else reset disk and try again
+  // reset and try again
   xor %ah, %ah
   int $0x13
-  jnc read
+  jnc eread
   jmp hang
-
-read_done:
+jmp_loadloadk:
   pushw $bpb_start
   push (drive_number)
   push (e820_count)
@@ -177,20 +167,16 @@ e820_first:
   test %ebx, %ebx
   je hang
   jmp e820_maybe_ingest
-
 e820_next:
   mov $0x534d4150, %edx
   mov $0xe820, %eax
   movl $0x1, %es:20(%di)
   mov $24, %ecx
   int $0x15
-  // doneness
   jc e820_done
   test %ebx, %ebx
   je e820_done
-
 e820_maybe_ingest:
-  // length returned in cx
   jcxz e820_next_or_done
   // if we got 20 bytes, try ingest
   cmp $20, %cl
@@ -198,26 +184,21 @@ e820_maybe_ingest:
   // got 24 bytes (acpi 3.0), check skip bit
   testb $1, %es:20(%di)
   je e820_next_or_done
-
 e820_ingest:
   mov %es:8(%di), %ecx
   or %es:12(%di), %ecx
   jz e820_next_or_done
-  // track number of entries
   incb e820_count
   // prepare for next entry
   // most likely 20 byte entries but
   // inc by 24 fOR cOmPatiBIliTY
   add $24, %di
-
 e820_next_or_done:
   test %ebx, %ebx
   jne e820_next
-
 e820_done:
   clc
   ret
-
 hang:
   jmp hang
 
@@ -269,10 +250,11 @@ partition_table_entry:
   .word 0
 
 dap:
-  .byte 0
+  .byte 0x10
   .byte 0
 dap_blocks:
-  .word 0
+  .byte 0x02
+  .byte 0
 dap_dest_addr_offset:
   .word 0
 dap_dest_addr_segment:
