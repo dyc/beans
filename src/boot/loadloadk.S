@@ -58,15 +58,15 @@ load_boot_cluster:
   addl %eax, (dap_lba)
   mov $2, %cx
   call eread
-find_loadk_file:
+find_loadk:
   mov (dap_dest_addr_offset), %si
   mov $loadk_file, %di
-find_loadk_file_loop:
+find_loadk_loop:
   movb $loadk_file_strlen, %cl
   call cmpstr
   je load_loadk
   add $0x20, %si
-  jmp find_loadk_file_loop
+  jmp find_loadk_loop
 load_loadk:
   // get cluster number from dirent
   movw 0x14(%si), %ax
@@ -83,12 +83,15 @@ load_loadk:
   mov $2, %cx
   call eread
 // todo: all of these :-)
-find_config_file:
-find_config_file_loop:
-find_kernel_file:
-find_kernel_file_loop:
-find_ramdisk_file:
-find_ramdisk_file_loop:
+find_config:
+find_config_loop:
+load_config:
+find_kernel:
+find_kernel_loop:
+load_kernel:
+find_ramdisk:
+find_ramdisk_loop:
+load_ramdisk:
 
   // protected mode
   // do after gdt with no interrupts
