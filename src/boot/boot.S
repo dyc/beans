@@ -64,8 +64,8 @@ ebpb_id:
   .quad 0
 
   // flush cs:ip
-  ljmp $0x0000, $start
-start:
+  ljmp $0x0000, $_start
+_start:
   xor %ax, %ax
   mov %ax, %ds
   mov %ax, %ss

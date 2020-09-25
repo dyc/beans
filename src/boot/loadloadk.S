@@ -1,40 +1,32 @@
-// given addr of bpb/ebpb in %bx,
-// and driver number in %al
-// loads /boot/loadk into memory at %di
+// loads /boot/loadk, /boot/kernel, /boot/ramdisk
+// into memory starting at $0x8400 (in that order)
 // clobbery :'-)
 // org 0x8200 (from linker script)
 .code16
-loadloadk:
+_start:
   pop (e820_count)
   pop (drive_number)
-  popw %bx
+  popw %bx // bpb_start
   movw $0x8400, (dap_dest_addr_offset)
   xor %ax, %ax
   // clear ds, es for cmpstr
   mov %ax, %ds
   mov %ax, %es
-load_root_cluster:
-  // bpb_fats
-  movb 0x10(%bx), %al
-  // ebpb_sectors_per_fat
-  mull 0x24(%bx)
-  // bpb_reserved_sectors (typically 32)
-  addw 0x0e(%bx), %ax
-  // account for partition LBA offset i.e. bpb_hidden_sectors
+  // calculate first cluster lba
+  // and save in dap_lba
+  movb 0x10(%bx), %al // bpb_fats
+  mull 0x24(%bx) // ebpb_sectors_per_fat
+  addw 0x0e(%bx), %ax // bpb_reserved_sectors (typically 32)
+  // account for partition LBA offset
+  // i.e. bpb_hidden_sectors
   // could also use pte's lba: 8(pte)
   addl 0x1c(%bx), %eax
-  movw %ax, %cx
-  // relative offset (in sectors) of root cluster
-  movl 0x2c(%bx), %eax
-  sub $2, %eax
-  // bpb_sectors_per_cluster
-  movb 0x0d(%bx), %dl
-  mulb %dl
-  // lba of root cluster
-  addl %ecx, %eax
   mov %eax, (dap_lba)
-  mov %eax, (root_cluster_lba)
-  call eread_start
+
+load_root_cluster:
+  movl 0x2c(%bx), %eax // root cluster num
+  call load_cluster
+
 find_boot_dir:
   mov (dap_dest_addr_offset), %si
   mov $boot_dir, %di
@@ -43,31 +35,18 @@ find_boot_dir_loop:
   add $0x20, %si
   call cmpstr
   jne find_boot_dir_loop
-load_boot_cluster:
-  // get cluster number from dirent
-  movw 0x14(%si), %ax
-  shl $16, %eax
-  movw 0x1a(%si), %ax
-  sub $2, %eax
-  // bpb_sectors_per_cluster
-  movb 0x0d(%bx), %dl
-  mulb %dl
-  // we have lba of root cluster in dap_lba
-  // so add lba(boot's cluster number)
-  addl %eax, (dap_lba)
-  call eread_start
+  call load_cluster_from_dirent
+
   // find each of loadk, kernel and ramdisk
   mov $3, %dh
-find_files:
   mov (dap_dest_addr_offset), %si
-find_files_loop:
+check_loadk:
   mov $loadk_file, %di
   movb $loadk_file_strlen, %cl
   call cmpstr
   jne check_kernel
   call found_file_common
   jmp found_loadk
-
 check_kernel:
   mov $kernel_file, %di
   movb $kernel_file_strlen, %cl
@@ -75,7 +54,6 @@ check_kernel:
   jne check_ramdisk
   call found_file_common
   jmp found_kernel
-
 check_ramdisk:
   mov $ramdisk_file, %di
   movb $ramdisk_file_strlen, %cl
@@ -84,33 +62,24 @@ check_ramdisk:
   call found_file_common
   jmp found_ramdisk
 found_file_common:
-  // get cluster number from dirent
   movw 0x14(%si), %ax
   shl $16, %eax
   movw 0x1a(%si), %ax
-  sub $2, %eax
-  // bpb_sectors_per_cluster
-  movb 0x0d(%bx), %dl
-  mulb %dl
-  // we have lba of root cluster in dap_lba
-  // so add lba(loadk's cluster number)
-  addl (root_cluster_lba), %eax
   // todo: this
-  // get size in sectors
   // movl 0x1c(%si), %ecx
   // shr $9, %ecx
-  movb $1, %cl
+  movb $1, %cl // size in sectors
   ret
 found_loadk:
-  mov %eax, (loadk_lba)
+  movw %ax, (loadk_cluster)
   movb %cl, (loadk_size)
   jmp maybe_find_next
 found_kernel:
-  mov %eax, (kernel_lba)
+  movw %ax, (kernel_cluster)
   movb %cl, (kernel_size)
   jmp maybe_find_next
 found_ramdisk:
-  mov %eax, (ramdisk_lba)
+  movw %ax, (ramdisk_cluster)
   movb %cl, (ramdisk_size)
   jmp maybe_find_next
 maybe_find_next:
@@ -118,30 +87,27 @@ maybe_find_next:
   jz load_start
 find_next:
   add $0x20, %si
-  jmp find_files_loop
+  jmp check_loadk
 load_start:
-  // todo: use size to calculate dest addr
-  mov $0x8400, (dap_dest_addr_offset)
+  // todo: use size in load and to calculate dest addr
+  movw $0x8400, (dap_dest_addr_offset)
 load_loadk:
-  mov (loadk_lba), %eax
-  mov %eax, (dap_lba)
-  movb (loadk_size), %al
-  movb %al, (dap_blocks)
-  call eread_start
+  movw (loadk_cluster), %ax
+  // movb (loadk_size), %al
+  // movb %al, (dap_blocks)
+  call load_cluster
   addw $0x200, (dap_dest_addr_offset)
 load_kernel:
-  mov (kernel_lba), %eax
-  mov %eax, (dap_lba)
-  movb (kernel_size), %al
-  movb %al, (dap_blocks)
-  call eread_start
+  movw (kernel_cluster), %ax
+  // movb (kernel_size), %al
+  // movb %al, (dap_blocks)
+  call load_cluster
   addw $0x200, (dap_dest_addr_offset)
 load_ramdisk:
-  mov (ramdisk_lba), %eax
-  movb %al, (dap_lba)
-  movb (ramdisk_size), %al
-  movb %al, (dap_blocks)
-  call eread_start
+  movw (ramdisk_cluster), %ax
+  // movb (ramdisk_size), %al
+  // movb %al, (dap_blocks)
+  call load_cluster
 
   // protected mode
   // do after gdt with no interrupts
@@ -163,6 +129,28 @@ load_ramdisk:
   // flush and jmp to loaded loadk
   ljmp $0x08, $0x8400
 
+// params
+// - %si: dirent
+// out
+// - %eax: cluster number
+load_cluster_from_dirent:
+  movw 0x14(%si), %ax
+  shl $16, %eax
+  movw 0x1a(%si), %ax
+// params
+// - %eax: cluster number
+// out
+// - %eax: lba(cluster), relative to first cluster
+load_cluster:
+  pushl (dap_lba)
+  subl $2, %eax // root cluster offset
+  movb 0x0d(%bx), %dl // bpb_sectors_per_cluster
+  mulb %dl
+  addl %eax, (dap_lba) // lba(cluster)
+  call eread_start
+  popl (dap_lba)
+  ret
+
 eread_start:
   mov $2, %cx
 eread:
@@ -180,6 +168,7 @@ eread:
   jmp hang
 eread_done:
   ret
+
 cmpstr:
   push %si
   push %di
@@ -189,12 +178,12 @@ cmpstr:
   pop %di
   pop %si
   ret
+
 hang:
   jmp hang
 
 drive_number:
   .byte 0
-
 dap:
   .byte 0x10
   .byte 0
@@ -211,24 +200,13 @@ dap_lba:
 dap_lba_ext:
   .word 0
   .word 0
-
 e820_count:
   .byte 0
-
-// save the original lba so we can
-// use it to calculate correct offsets
-// when/if dap_lba is ever overwritten
-root_cluster_lba:
+loadk_cluster:
   .word 0
+kernel_cluster:
   .word 0
-loadk_lba:
-  .word 0
-  .word 0
-kernel_lba:
-  .word 0
-  .word 0
-ramdisk_lba:
-  .word 0
+ramdisk_cluster:
   .word 0
 loadk_size:
   .byte 0
@@ -236,7 +214,6 @@ kernel_size:
   .byte 0
 ramdisk_size:
   .byte 0
-
 boot_dir: .ascii "BOOT"
 .equ boot_dir_strlen, .-boot_dir
 loadk_file: .ascii "LOADK"
@@ -246,4 +223,5 @@ kernel_file: .ascii "BEANS"
 .equ kernel_file_strlen, .-kernel_file
 ramdisk_file: .ascii "RAMDISK"
 .equ ramdisk_file_strlen, .-ramdisk_file
-.skip 512-(.-loadloadk), 0
+
+.skip 512-(.-_start), 0
