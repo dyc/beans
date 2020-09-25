@@ -64,21 +64,25 @@ find_files_loop:
   mov $loadk_file, %di
   movb $loadk_file_strlen, %cl
   call cmpstr
-  je found_file_common
+  jne check_kernel
+  call found_file_common
+  jmp found_loadk
 
+check_kernel:
   mov $kernel_file, %di
   movb $kernel_file_strlen, %cl
   call cmpstr
-  je found_file_common
+  jne check_ramdisk
+  call found_file_common
+  jmp found_kernel
 
+check_ramdisk:
   mov $ramdisk_file, %di
   movb $ramdisk_file_strlen, %cl
   call cmpstr
-  je found_file_common
-
-  // no match
-  add $0x20, %si
-  jmp find_files_loop
+  jne find_next
+  call found_file_common
+  jmp found_ramdisk
 found_file_common:
   // get cluster number from dirent
   movw 0x14(%si), %ax
@@ -93,37 +97,50 @@ found_file_common:
   addl (root_cluster_lba), %eax
   // todo: this
   // get size in sectors
-  movl 0x1c(%si), %ecx
-  shr $9, %ecx
+  // movl 0x1c(%si), %ecx
+  // shr $9, %ecx
+  movb $1, %cl
+  ret
 found_loadk:
   mov %eax, (loadk_lba)
-  mov %ecx, (loadk_size)
-  jmp find_next_or_done
+  movb %cl, (loadk_size)
+  jmp maybe_find_next
 found_kernel:
   mov %eax, (kernel_lba)
-  mov %ecx, (kernel_size)
-  jmp find_next_or_done
+  movb %cl, (kernel_size)
+  jmp maybe_find_next
 found_ramdisk:
   mov %eax, (ramdisk_lba)
-  mov %ecx, (ramdisk_size)
-  jmp find_next_or_done
-find_next_or_done:
+  movb %cl, (ramdisk_size)
+  jmp maybe_find_next
+maybe_find_next:
   dec %dh
-  jz load_loadk
+  jz load_start
+find_next:
   add $0x20, %si
-  jmp find_files
-// todo: use size to calculate dest addr for each of these
+  jmp find_files_loop
+load_start:
+  // todo: use size to calculate dest addr
+  mov $0x8400, (dap_dest_addr_offset)
 load_loadk:
   mov (loadk_lba), %eax
   mov %eax, (dap_lba)
+  movb (loadk_size), %al
+  movb %al, (dap_blocks)
   call eread_start
+  addw $0x200, (dap_dest_addr_offset)
 load_kernel:
   mov (kernel_lba), %eax
   mov %eax, (dap_lba)
+  movb (kernel_size), %al
+  movb %al, (dap_blocks)
   call eread_start
+  addw $0x200, (dap_dest_addr_offset)
 load_ramdisk:
   mov (ramdisk_lba), %eax
-  mov %eax, (dap_lba)
+  movb %al, (dap_lba)
+  movb (ramdisk_size), %al
+  movb %al, (dap_blocks)
   call eread_start
 
   // protected mode
