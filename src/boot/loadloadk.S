@@ -101,9 +101,13 @@ load_loadk:
   mov (loadk_cluster), %ax
   call load_file_cluster
 load_kernel:
+  mov (dap_dest_addr_offset), %ax
+  mov %ax, (kernel_start)
   mov (kernel_cluster), %ax
   call load_file_cluster
 load_ramdisk:
+  mov (dap_dest_addr_offset), %ax
+  mov %ax, (ramdisk_start)
   mov (ramdisk_cluster), %ax
   call load_file_cluster
 
@@ -119,12 +123,14 @@ load_ramdisk:
   mov %ax, %fs
   mov %ax, %gs
   mov %ax, %ss
+
+  pushw (ramdisk_start)
+  pushw (kernel_start)
   pushl $mmap
   xor %eax, %eax
   mov (e820_count), %al
   push %eax
   pushl $hang
-  // flush and jmp to loaded loadk
   ljmp $0x08, $loadk
 
 // params
@@ -189,7 +195,6 @@ eread_loop:
   jnc eread_done
   dec %cx
   jz hang
-  // reset and try again
   xor %ah, %ah
   int $0x13
   jnc eread_loop
@@ -234,7 +239,11 @@ loadk_cluster:
   .word 0
 kernel_cluster:
   .word 0
+kernel_start:
+  .word 0
 ramdisk_cluster:
+  .word 0
+ramdisk_start:
   .word 0
 boot_dir: .ascii "BOOT"
 .equ boot_dir_strlen, .-boot_dir

@@ -17,9 +17,11 @@ struct mmap_entry {
   uint32_t type, unused;
 } __attribute__((packed));
 
-void loadk(size_t mmap_entries, struct mmap_entry *mmap) {
+void loadk(size_t mmap_entries, struct mmap_entry *mmap, uint32_t* kernel, uint32_t* initrd) {
   (void)mmap_entries;
   (void)mmap;
+  (void)kernel;
+  (void)initrd;
   buffer = (uint16_t *)VGA_TEXT_START;
   for (size_t y = 0; y < VGA_HEIGHT; ++y) {
     for (size_t x = 0; x < VGA_WIDTH; ++x) {
