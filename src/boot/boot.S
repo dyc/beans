@@ -122,24 +122,24 @@ no92:
   // start read after boot (this) block
   addb $1, %al
   mov %eax, (dap_lba)
-  mov $2, %cx
+  movw $2, %cx
 eread:
-  lea dap, %si
-  mov (drive_number), %dl
-  mov $0x42, %ah
+  leaw dap, %si
+  movb (drive_number), %dl
+  movb $0x42, %ah
   int $0x13
   jnc jmp_loadloadk
-  dec %cx
+  decw %cx
   jz hang
   // reset and try again
-  xor %ah, %ah
+  xorb %ah, %ah
   int $0x13
   jnc eread
   jmp hang
 jmp_loadloadk:
   pushw $bpb_start
-  push (drive_number)
-  push (e820_count)
+  pushw (drive_number)
+  pushw (e820_count)
   jmp 0x8000
 
 // if first iteration fails then e820 isn't supported

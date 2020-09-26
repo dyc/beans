@@ -4,31 +4,36 @@
 // org 0x8200 (from linker script)
 .code16
 _start:
-  pop (e820_count)
-  pop (drive_number)
+  popw (e820_count)
+  popw (drive_number)
   popw %bx // bpb_start
-  movw $0x8400, (dap_dest_addr_offset)
-  xor %ax, %ax
+  xor %eax, %eax
   // clear ds, es for cmpstr
-  mov %ax, %ds
-  mov %ax, %es
-  // calculate first cluster lba
-  // and save in dap_lba
+  movw %ax, %ds
+  movw %ax, %es
+
+// assume everything we need is in the first fat
+load_fat:
+  movw $0x8400, (dap_dest_addr_offset)
+  // account for partition LBA offset
+  // could also use pte's lba: 8(pte)
+  movl 0x1c(%bx), %eax // bpb_hidden_sectors
+  // within partition, fat starts here
+  addw 0x0e(%bx), %ax // bpb_reserved_sectors (typically 32)
+  mov %eax, (dap_lba) // fat lba
+  call eread
+  xor %eax, %eax
   movb 0x10(%bx), %al // bpb_fats
   mull 0x24(%bx) // ebpb_sectors_per_fat
-  addw 0x0e(%bx), %ax // bpb_reserved_sectors (typically 32)
-  // account for partition LBA offset
-  // i.e. bpb_hidden_sectors
-  // could also use pte's lba: 8(pte)
-  addl 0x1c(%bx), %eax
-  mov %eax, (dap_lba)
+  add %eax, (dap_lba) // root cluster lba
+  // loads will go right after fat
+  addw $0x200, (dap_dest_addr_offset)
 
 load_root_cluster:
   movl 0x2c(%bx), %eax // root cluster num
   call load_cluster
-
 find_boot_dir:
-  mov (dap_dest_addr_offset), %si
+  movw (dap_dest_addr_offset), %si
   mov $boot_dir, %di
 find_boot_dir_loop:
   movb $boot_dir_strlen, %cl
@@ -38,8 +43,8 @@ find_boot_dir_loop:
   call load_cluster_from_dirent
 
   // find each of loadk, kernel and ramdisk
-  mov $3, %ch
-  mov (dap_dest_addr_offset), %si
+  mov $3, %dl
+  movw (dap_dest_addr_offset), %si
 check_loadk:
   mov $loadk_file, %di
   movb $loadk_file_strlen, %cl
@@ -72,9 +77,10 @@ check_ramdisk:
 // - %ax: cluster num
 // - %cx: size in sectors
 get_cluster_info:
+  pushw %dx
   xor %dx, %dx
   movw 0x1c(%si), %ax // size in bytes
-  div 0x0b(%bx) // bytes per sector
+  divw 0x0b(%bx) // bytes per sector
   cmp $0, %dx
   je no_remainder
   addw $1, %ax
@@ -83,15 +89,16 @@ no_remainder:
   movw 0x14(%si), %ax
   shl $16, %eax
   movw 0x1a(%si), %ax
+  popw %dx
   ret
 maybe_check_next:
-  dec %ch
+  dec %dl
   jz load_start
 check_next:
   add $0x20, %si
   jmp check_loadk
 load_start:
-  movw $0x8400, (dap_dest_addr_offset)
+  movw $0x8600, (dap_dest_addr_offset)
 load_loadk:
   movw (loadk_cluster), %ax
   movb (loadk_size), %cl
@@ -131,7 +138,7 @@ load_ramdisk:
   push %eax
   pushl $hang
   // flush and jmp to loaded loadk
-  ljmp $0x08, $0x8400
+  ljmp $0x08, $0x8600
 
 // params
 // - %si: dirent
@@ -151,26 +158,28 @@ load_cluster:
   movb 0x0d(%bx), %dl // bpb_sectors_per_cluster
   mulb %dl
   addl %eax, (dap_lba) // lba(cluster)
-  call eread_start
+  call eread
   popl (dap_lba)
   ret
 
-eread_start:
-  mov $2, %cx
 eread:
-  lea dap, %si
-  mov (drive_number), %dl
-  mov $0x42, %ah
+  pushw %cx
+  movw $2, %cx
+eread_loop:
+  leaw dap, %si
+  movb (drive_number), %dl
+  movb $0x42, %ah
   int $0x13
   jnc eread_done
-  dec %cx
+  decw %cx
   jz hang
   // reset and try again
-  xor %ah, %ah
+  xorb %ah, %ah
   int $0x13
-  jnc eread
+  jnc eread_loop
   jmp hang
 eread_done:
+  popw %cx
   ret
 
 cmpstr:
