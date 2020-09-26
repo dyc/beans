@@ -38,7 +38,7 @@ find_boot_dir_loop:
   call load_cluster_from_dirent
 
   // find each of loadk, kernel and ramdisk
-  mov $3, %dh
+  mov $3, %ch
   mov (dap_dest_addr_offset), %si
 check_loadk:
   mov $loadk_file, %di
@@ -67,40 +67,50 @@ check_ramdisk:
   movw %ax, (ramdisk_cluster)
   movb %cl, (ramdisk_size)
   jmp maybe_check_next
+
+// out
+// - %ax: cluster num
+// - %cx: size in sectors
 get_cluster_info:
+  xor %dx, %dx
+  movw 0x1c(%si), %ax // size in bytes
+  div 0x0b(%bx) // bytes per sector
+  cmp $0, %dx
+  je no_remainder
+  addw $1, %ax
+no_remainder:
+  mov %ax, %cx
   movw 0x14(%si), %ax
   shl $16, %eax
   movw 0x1a(%si), %ax
-  // todo: this
-  // movl 0x1c(%si), %ecx
-  // shr $9, %ecx
-  movb $1, %cl // size in sectors
   ret
 maybe_check_next:
-  dec %dh
+  dec %ch
   jz load_start
 check_next:
   add $0x20, %si
   jmp check_loadk
 load_start:
-  // todo: use size in load and to calculate dest addr
   movw $0x8400, (dap_dest_addr_offset)
 load_loadk:
   movw (loadk_cluster), %ax
-  // movb (loadk_size), %al
-  // movb %al, (dap_blocks)
+  movb (loadk_size), %cl
+  // todo: consult fat, read all clusters
+  movb %cl, (dap_blocks)
   call load_cluster
-  addw $0x200, (dap_dest_addr_offset)
+  shlw $9, %cx
+  addw %cx, (dap_dest_addr_offset)
 load_kernel:
   movw (kernel_cluster), %ax
-  // movb (kernel_size), %al
-  // movb %al, (dap_blocks)
+  movb (kernel_size), %cl
+  movb %cl, (dap_blocks)
   call load_cluster
-  addw $0x200, (dap_dest_addr_offset)
+  shlw $9, %cx
+  addw %cx, (dap_dest_addr_offset)
 load_ramdisk:
   movw (ramdisk_cluster), %ax
-  // movb (ramdisk_size), %al
-  // movb %al, (dap_blocks)
+  movb (ramdisk_size), %cl
+  movb %cl, (dap_blocks)
   call load_cluster
 
   // protected mode
