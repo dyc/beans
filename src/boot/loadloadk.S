@@ -6,37 +6,37 @@
 _start:
   popw (e820_count)
   popw (drive_number)
-  popw %bx // bpb_start
+  pop %bx // bpb_start
   xor %eax, %eax
   // clear ds, es for cmpstr
-  movw %ax, %ds
-  movw %ax, %es
+  mov %ax, %ds
+  mov %ax, %es
 
 // assume everything we need is in the first fat
 load_fat:
   movw $fat, (dap_dest_addr_offset)
   // account for partition LBA offset
   // could also use pte's lba: 8(pte)
-  movl 0x1c(%bx), %eax // bpb_hidden_sectors
+  mov 0x1c(%bx), %eax // bpb_hidden_sectors
   // within partition, fat starts here
-  addw 0x0e(%bx), %ax // bpb_reserved_sectors (typically 32)
+  add 0x0e(%bx), %ax // bpb_reserved_sectors (typically 32)
   mov %eax, (dap_lba) // fat lba
   call eread
   xor %eax, %eax
-  movb 0x10(%bx), %al // bpb_fats
+  mov 0x10(%bx), %al // bpb_fats
   mull 0x24(%bx) // ebpb_sectors_per_fat
   add %eax, (dap_lba) // root cluster lba
   // loads will go right after fat
   addw $sector_bytes, (dap_dest_addr_offset)
 
 load_root_cluster:
-  movl 0x2c(%bx), %eax // root cluster num
+  mov 0x2c(%bx), %eax // root cluster num
   call load_cluster
 find_boot_dir:
-  movw (dap_dest_addr_offset), %si
+  mov (dap_dest_addr_offset), %si
   mov $boot_dir, %di
 find_boot_dir_loop:
-  movb $boot_dir_strlen, %cl
+  mov $boot_dir_strlen, %cl
   add $0x20, %si
   call cmpstr
   jne find_boot_dir_loop
@@ -44,49 +44,49 @@ find_boot_dir_loop:
 
   // find each of loadk, kernel and ramdisk
   mov $3, %dl
-  movw (dap_dest_addr_offset), %si
+  mov (dap_dest_addr_offset), %si
 check_loadk:
   mov $loadk_file, %di
-  movb $loadk_file_strlen, %cl
+  mov $loadk_file_strlen, %cl
   call cmpstr
   jne check_kernel
   call get_cluster_info
-  movw %ax, (loadk_cluster)
+  mov %ax, (loadk_cluster)
   jmp maybe_check_next
 check_kernel:
   mov $kernel_file, %di
-  movb $kernel_file_strlen, %cl
+  mov $kernel_file_strlen, %cl
   call cmpstr
   jne check_ramdisk
   call get_cluster_info
-  movw %ax, (kernel_cluster)
+  mov %ax, (kernel_cluster)
   jmp maybe_check_next
 check_ramdisk:
   mov $ramdisk_file, %di
-  movb $ramdisk_file_strlen, %cl
+  mov $ramdisk_file_strlen, %cl
   call cmpstr
   jne check_next
   call get_cluster_info
-  movw %ax, (ramdisk_cluster)
+  mov %ax, (ramdisk_cluster)
   jmp maybe_check_next
 
 // out
 // - %ax: cluster num
 // - %cx: size in sectors
 get_cluster_info:
-  pushw %dx
+  push %dx
   xor %dx, %dx
-  movw 0x1c(%si), %ax // size in bytes
+  mov 0x1c(%si), %ax // size in bytes
   divw 0x0b(%bx) // bytes per sector
   cmp $0, %dx
   je no_remainder
-  addw $1, %ax
+  add $1, %ax
 no_remainder:
   mov %ax, %cx
-  movw 0x14(%si), %ax
+  mov 0x14(%si), %ax
   shl $16, %eax
-  movw 0x1a(%si), %ax
-  popw %dx
+  mov 0x1a(%si), %ax
+  pop %dx
   ret
 maybe_check_next:
   dec %dl
@@ -98,13 +98,13 @@ check_next:
 load_start:
   movw $loadk, (dap_dest_addr_offset)
 load_loadk:
-  movw (loadk_cluster), %ax
+  mov (loadk_cluster), %ax
   call load_file_cluster
 load_kernel:
-  movw (kernel_cluster), %ax
+  mov (kernel_cluster), %ax
   call load_file_cluster
 load_ramdisk:
-  movw (ramdisk_cluster), %ax
+  mov (ramdisk_cluster), %ax
   call load_file_cluster
 
   // protected mode
@@ -132,9 +132,9 @@ load_ramdisk:
 // out
 // - %eax: cluster
 load_cluster_from_dirent:
-  movw 0x14(%si), %ax
+  mov 0x14(%si), %ax
   shl $16, %eax
-  movw 0x1a(%si), %ax
+  mov 0x1a(%si), %ax
 // params
 // - %eax: cluster
 // out
@@ -142,10 +142,10 @@ load_cluster_from_dirent:
 load_cluster:
   pushl (dap_lba)
   push %eax
-  subl $2, %eax // root cluster offset
-  movb 0x0d(%bx), %dl // bpb_sectors_per_cluster
-  mulb %dl
-  addl %eax, (dap_lba) // lba(cluster)
+  sub $2, %eax // root cluster offset
+  mov 0x0d(%bx), %dl // bpb_sectors_per_cluster
+  mul %dl
+  add %eax, (dap_lba) // lba(cluster)
   call eread
   pop %eax
   popl (dap_lba)
@@ -156,7 +156,7 @@ load_cluster:
 // out
 // - %ax: next cluster, or zero
 get_next_cluster:
-  movl fat(,%eax,4), %eax
+  mov fat(,%eax,4), %eax
   and $fat_mask, %eax
   cmp $fat_valid_start, %eax
   jl no_next_cluster
@@ -180,23 +180,21 @@ load_file_cluster_done:
   ret
 
 eread:
-  pushw %cx
-  movw $2, %cx
+  mov $2, %cx
 eread_loop:
-  leaw dap, %si
-  movb (drive_number), %dl
-  movb $0x42, %ah
+  lea dap, %si
+  mov (drive_number), %dl
+  mov $0x42, %ah
   int $0x13
   jnc eread_done
-  decw %cx
+  dec %cx
   jz hang
   // reset and try again
-  xorb %ah, %ah
+  xor %ah, %ah
   int $0x13
   jnc eread_loop
   jmp hang
 eread_done:
-  popw %cx
   ret
 
 cmpstr:

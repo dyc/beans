@@ -63,8 +63,7 @@ ebpb_volume_label:
 ebpb_id:
   .quad 0
 
-  // flush cs:ip
-  ljmp $0x0000, $_start
+  ljmp $0x0000, $_start // flush cs:ip
 _start:
   xor %ax, %ax
   mov %ax, %ds
@@ -95,13 +94,12 @@ _start:
   cli
   // fast a20 enable, if necessary
   in $0x92, %al
-  testb $2, %al
+  test $2, %al
   jnz no92
   or $2, %al
   and $0xfe, %al
   out %al, $0x92
 no92:
-  // lgdt
   xor %eax, %eax
   mov %ds, %ax
   shl $4, %eax
@@ -118,21 +116,21 @@ no92:
   // get this partition's lba offset
   mov (partition_table_entry), %bx
   add $8, %bx
-  movl (%ebx), %eax
+  mov (%ebx), %eax
   // start read after boot (this) block
-  addb $1, %al
+  add $1, %al
   mov %eax, (dap_lba)
-  movw $2, %cx
+  mov $2, %cx
 eread:
-  leaw dap, %si
-  movb (drive_number), %dl
-  movb $0x42, %ah
+  lea dap, %si
+  mov (drive_number), %dl
+  mov $0x42, %ah
   int $0x13
   jnc jmp_loadloadk
-  decw %cx
+  dec %cx
   jz hang
   // reset and try again
-  xorb %ah, %ah
+  xor %ah, %ah
   int $0x13
   jnc eread
   jmp hang

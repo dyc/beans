@@ -17,10 +17,10 @@ relocate:
   mov $0x7c00, %si
   mov $0x0600, %di
   rep movsw
-  ljmp $0x0, $(start_check_partition)
+  ljmp $0x0, $start_check_partition
 start_check_partition:
   mov %dl, (drive_number)
-  leaw partition1, %bx
+  lea partition1, %bx
   mov $4, %cx
 check_partition:
   // for now, assume there's a bootable partition
@@ -32,11 +32,9 @@ check_partition:
   jnz check_partition
   jmp hang
 found_boot_partition:
-  movw %bx, (boot_partition)
+  mov %bx, (boot_partition)
   movl $0x7c00, (dap_dest_addr_offset)
-  // pte lba is at offset 0x08
-  add $8, %bx
-  movl (%bx), %ebx
+  movl 8(%bx), %ebx // partition's lba
   mov %ebx, (dap_lba)
   mov $2, %cx
 eread:
@@ -47,17 +45,15 @@ eread:
   jnc boot
   dec %cx
   jz hang
-  // reset and try again
   xor %ah, %ah
   int $0x13
   jnc eread
   jmp hang
 boot:
-  // check for magic in boot image
-  mov 0x7dfe, %bx
+  mov magic_addr, %bx
   cmp $0xaa55, %bx
   jne hang
-  movw (boot_partition), %si
+  mov (boot_partition), %si
   mov (drive_number), %dl
   // hold onto ur butts
   ljmp $0x0, $0x7c00
@@ -71,12 +67,9 @@ boot_partition:
   .word 0
   .word 0
 
-// disk address packet
-dap:
-  // packet size
-  .byte 0x10
-  // reserved
-  .byte 0
+dap: // disk address packet
+  .byte 0x10 // packet size
+  .byte 0 // reserved
 dap_blocks:
   .byte 0x01
   .byte 0
@@ -102,34 +95,29 @@ dap_lba_ext:
 // we'll drop these in favor of what
 // mkimg ends up putting here
 partition1:
-  // active
-  .byte 0x80
-// chs addr of first sector
-partition1_start_chs:
+  .byte 0x80 // active
+partition1_start_chs: // chs of first sector
   .byte 0x00
   .byte 0x01
   .byte 0x00
-// type (fat32 lba)
-partition1_type:
-  .byte 0x0c
-// chs addr of last sector (650/4/63)
-partition1_end_chs:
+partition1_type: // type
+  .byte 0x0c // (fat32 lba)
+partition1_end_chs: // chs of last sector (650/4/63)
   .byte 0x04
   .byte 0xFF
   .byte 0x8a
-// lba of first sector
 partition1_start_lba:
   .byte 0x01
   .byte 0x00
   .byte 0x00
   .byte 0x00
-// num sectors (163840)
-partition1_size:
+partition1_size: // 163840
   .byte 0x00
   .byte 0x80
   .byte 0x02
   .byte 0x00
-// partitions 2-4
-.skip 48, 0
+.skip 48, 0 // partitions 2-4
+
+.equ magic_addr, 0x7dfe
 
 .word 0xaa55
