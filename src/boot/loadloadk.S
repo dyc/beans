@@ -45,23 +45,29 @@ check_loadk:
   movb $loadk_file_strlen, %cl
   call cmpstr
   jne check_kernel
-  call found_file_common
-  jmp found_loadk
+  call get_cluster_info
+  movw %ax, (loadk_cluster)
+  movb %cl, (loadk_size)
+  jmp maybe_check_next
 check_kernel:
   mov $kernel_file, %di
   movb $kernel_file_strlen, %cl
   call cmpstr
   jne check_ramdisk
-  call found_file_common
-  jmp found_kernel
+  call get_cluster_info
+  movw %ax, (kernel_cluster)
+  movb %cl, (kernel_size)
+  jmp maybe_check_next
 check_ramdisk:
   mov $ramdisk_file, %di
   movb $ramdisk_file_strlen, %cl
   call cmpstr
-  jne find_next
-  call found_file_common
-  jmp found_ramdisk
-found_file_common:
+  jne check_next
+  call get_cluster_info
+  movw %ax, (ramdisk_cluster)
+  movb %cl, (ramdisk_size)
+  jmp maybe_check_next
+get_cluster_info:
   movw 0x14(%si), %ax
   shl $16, %eax
   movw 0x1a(%si), %ax
@@ -70,22 +76,10 @@ found_file_common:
   // shr $9, %ecx
   movb $1, %cl // size in sectors
   ret
-found_loadk:
-  movw %ax, (loadk_cluster)
-  movb %cl, (loadk_size)
-  jmp maybe_find_next
-found_kernel:
-  movw %ax, (kernel_cluster)
-  movb %cl, (kernel_size)
-  jmp maybe_find_next
-found_ramdisk:
-  movw %ax, (ramdisk_cluster)
-  movb %cl, (ramdisk_size)
-  jmp maybe_find_next
-maybe_find_next:
+maybe_check_next:
   dec %dh
   jz load_start
-find_next:
+check_next:
   add $0x20, %si
   jmp check_loadk
 load_start:

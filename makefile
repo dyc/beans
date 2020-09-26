@@ -170,7 +170,7 @@ $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 
 # todo: actually make this
 $(BIN_DIR)/ramdisk.img: $(BOOT_BUILD_DIR)/loadk.o $(KERNEL_MOD_BUILD_DIR)/ata.ko
-	touch $@
+	echo "otherwise this file will have cluster number 0" > $@
 
 $(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
 	./host/scripts/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
