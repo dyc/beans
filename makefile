@@ -15,6 +15,7 @@ KERNEL_LIB_BUILD_DIR:=$(KERNEL_BUILD_DIR)/lib
 KERNEL_MOD_BUILD_DIR:=$(KERNEL_BUILD_DIR)/modules
 LIB_BUILD_DIR:=$(BUILD_DIR)/lib
 LIBC_BUILD_DIR:=$(BUILD_DIR)/libc
+SYMBOLS_BUILD_DIR:=$(BUILD_DIR)/sym
 
 SRC_DIR:=src
 BOOT_SRC_DIR:=$(SRC_DIR)/boot
@@ -35,6 +36,7 @@ BOOT_OBJS:=$(patsubst %.S,%.o,$(wildcard $(BOOT_SRC_DIR)/*.S))
 BOOT_OBJS+=$(patsubst %.c,%.o,$(wildcard $(BOOT_SRC_DIR)/*.c))
 BOOT_OBJS:=$(patsubst $(BOOT_SRC_DIR)/%,$(BOOT_BUILD_DIR)/%,$(BOOT_OBJS))
 BOOT_BINS:=$(patsubst %.o,%,$(BOOT_OBJS))
+BOOT_ELFS:=$(BOOT_BINS)
 BOOT_BINS:=$(patsubst $(BOOT_BUILD_DIR)/%,$(BIN_DIR)/%,$(BOOT_BINS))
 BCFLAGS:=-Os -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror
 
@@ -128,6 +130,9 @@ $(LIBC_OBJS): | $(LIBC_BUILD_DIR)
 $(LIBC_BUILD_DIR):
 	mkdir -p $@
 
+$(SYMBOLS_BUILD_DIR):
+	mkdir -p $@
+
 $(KERNEL_BUILD_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
 	$(CC) $(KCFLAGS) -c $< -o $@
 
@@ -168,8 +173,11 @@ $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.S
 $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -T $(LINKER_SRC_DIR)/$(@F).ld -o $@ $^
 
+$(BOOT_BUILD_DIR)/%: $(BOOT_BUILD_DIR)/%.o
+	$(LD) -o $@ $^
+
 # todo: actually make this
-$(BIN_DIR)/ramdisk.img: $(BOOT_BUILD_DIR)/loadk.o $(KERNEL_MOD_BUILD_DIR)/ata.ko
+$(BIN_DIR)/ramdisk.img: $(KERNEL_MOD_BUILD_DIR)/ata.ko
 	echo "otherwise this file will have cluster number 0" > $@
 
 $(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
@@ -179,10 +187,12 @@ $(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KER
 run: $(BIN_DIR)/beans.img
 	qemu-system-i386 -serial stdio -drive format=raw,file=$(BIN_DIR)/beans.img
 
+# todo: look into using elf symbols with flat binary (e.g. for loadk)
 .PHONY: gdb
-gdb: debug
-	$(OBJCOPY) --only-keep-debug $(BIN_DIR)/beans $(BIN_DIR)/beans.sym
+gdb: debug $(BOOT_BUILD_DIR)/loadk | $(SYMBOLS_BUILD_DIR)
+	$(OBJCOPY) --only-keep-debug $(BIN_DIR)/beans $(SYMBOLS_BUILD_DIR)/beans.debug
 	$(OBJCOPY) --strip-debug $(BIN_DIR)/beans
+	$(OBJCOPY) --only-keep-debug $(BOOT_BUILD_DIR)/loadk $(SYMBOLS_BUILD_DIR)/loadk.debug
 	qemu-system-i386 -s -S -serial stdio -drive format=raw,file=$(BIN_DIR)/beans.img
 
 .PHONY: clean

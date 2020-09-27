@@ -124,8 +124,8 @@ load_ramdisk:
   mov %ax, %gs
   mov %ax, %ss
 
-  pushw (ramdisk_start)
-  pushw (kernel_start)
+  pushl (ramdisk_start)
+  pushl (kernel_start)
   pushl $mmap
   xor %eax, %eax
   mov (e820_count), %al
@@ -241,9 +241,11 @@ kernel_cluster:
   .word 0
 kernel_start:
   .word 0
+  .word 0
 ramdisk_cluster:
   .word 0
 ramdisk_start:
+  .word 0
   .word 0
 boot_dir: .ascii "BOOT"
 .equ boot_dir_strlen, .-boot_dir

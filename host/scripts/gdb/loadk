@@ -1,5 +1,8 @@
 target remote :1234
-b *0x8400
+# todo: add this back
+# add-symbol-file build/sym/loadk.debug
+b *0x8600
 c
+# todo: layout split, once we have symbols
 layout asm
-x/12bx $esp
+x/6wx $esp
