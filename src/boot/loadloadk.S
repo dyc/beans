@@ -14,7 +14,7 @@ _start:
 
 // assume everything we need is in the first fat
 load_fat:
-  movw $fat, (dap_dest_addr_offset)
+  movw $fat_start, (dap_dest_addr_offset)
   // account for partition LBA offset
   // could also use pte's lba: 8(pte)
   mov 0x1c(%bx), %eax // bpb_hidden_sectors
@@ -96,7 +96,7 @@ check_next:
   jmp check_loadk
 
 load_start:
-  movw $loadk, (dap_dest_addr_offset)
+  movw $loadk_start, (dap_dest_addr_offset)
 load_loadk:
   mov (loadk_cluster), %ax
   call load_file_cluster
@@ -126,12 +126,12 @@ load_ramdisk:
 
   pushl (ramdisk_start)
   pushl (kernel_start)
-  pushl $mmap
+  pushl $mmap_start
   xor %eax, %eax
   mov (e820_count), %al
   push %eax
   pushl $hang
-  ljmp $0x08, $loadk
+  ljmp $0x08, $loadk_start
 
 // params
 // - %si: dirent
@@ -162,7 +162,7 @@ load_cluster:
 // out
 // - %ax: next cluster, or zero
 get_next_cluster:
-  mov fat(,%eax,4), %eax
+  mov fat_start(,%eax,4), %eax
   and $fat_mask, %eax
   cmp $fat_valid_start, %eax
   jl no_next_cluster
@@ -256,9 +256,9 @@ kernel_file: .ascii "BEANS"
 .equ kernel_file_strlen, .-kernel_file
 ramdisk_file: .ascii "RAMDISK"
 .equ ramdisk_file_strlen, .-ramdisk_file
-.equ mmap, 0x500
-.equ fat, 0x8400
-.equ loadk, 0x8600
+.equ mmap_start, 0x500
+.equ fat_start, 0x8400
+.equ loadk_start, 0x8600
 .equ fat_mask, 0x0fffffff
 .equ fat_valid_start, 0x00000002
 .equ fat_valid_end, 0x0ffffff0

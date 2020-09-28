@@ -1,7 +1,12 @@
 OUTPUT_FORMAT(binary)
 SECTIONS {
-  . = 0x8400;
-  .loadk : {
-    *(.text .rodata .data .bss)
+  . = 0x8600;
+  .text : {
+    *(.text.loadk);
+    *(.text);
+  }
+
+  .data : {
+    *(.rodata .data .bss);
   }
 }
