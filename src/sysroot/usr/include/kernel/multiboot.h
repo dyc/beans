@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BEANS_KERNEL_MULTIBOOT_H_
+#define BEANS_KERNEL_MULTIBOOT_H_
 
 #include <stdint.h>
 
@@ -76,3 +77,5 @@ struct multiboot_module {
   uint32_t cmdline;
   uint32_t pad;
 };
+
+#endif

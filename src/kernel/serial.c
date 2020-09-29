@@ -39,16 +39,6 @@ void transmit(enum serial_port p, char c) {
   outb(data_reg(p), c);
 }
 
-void serial_enable(enum serial_port p) {
-  outb(intenable_reg(p), 0x00);
-  // 115200 bps
-  serial_set_baud(p, 0x01);
-  outb(linecontrol_reg(p), DEFAULT_LINE_CONFIG);
-  outb(fifocontrol_reg(p), DEFAULT_FIFO_CONFIG);
-  outb(modemcontrol_reg(p), DEFAULT_MODEM_CONFIG);
-  outb(intenable_reg(p), 0x01);
-}
-
 void serial_set_baud(enum serial_port p, unsigned short divisor) {
   uint8_t prevline = inb(linecontrol_reg(p));
   outb(linecontrol_reg(p), ENABLE_SET_DIVISOR);
@@ -57,6 +47,16 @@ void serial_set_baud(enum serial_port p, unsigned short divisor) {
   // seems like folks usually write something like
   // DEFAULT_LINE_CONFIG in lieu of prevline
   outb(linecontrol_reg(p), prevline);
+}
+
+void serial_enable(enum serial_port p) {
+  outb(intenable_reg(p), 0x00);
+  // 115200 bps
+  serial_set_baud(p, 0x01);
+  outb(linecontrol_reg(p), DEFAULT_LINE_CONFIG);
+  outb(fifocontrol_reg(p), DEFAULT_FIFO_CONFIG);
+  outb(modemcontrol_reg(p), DEFAULT_MODEM_CONFIG);
+  outb(intenable_reg(p), 0x01);
 }
 
 void serial_write(enum serial_port p, const char *s) {

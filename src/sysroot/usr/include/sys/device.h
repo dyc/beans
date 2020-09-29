@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BEANS_SYS_DEVICE_H_
+#define BEANS_SYS_DEVICE_H_
 
 #include <kernel/desc.h>
 
@@ -10,3 +11,5 @@ extern void keyboard_install();
 extern void pit_install();
 extern void pit_set_freq_hz(size_t hz);
 extern void pit_set_timer_cb(void (*cb)(unsigned long));
+
+#endif

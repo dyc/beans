@@ -1,6 +1,7 @@
 // todo: move this to module/
 
-#pragma once
+#ifndef BEANS_KERNEL_VGA_H_
+#define BEANS_KERNEL_VGA_H_
 
 #include <stddef.h>
 
@@ -30,3 +31,5 @@ extern void vga_init();
 extern void vga_fg(enum vga_color c);
 extern void vga_bg(enum vga_color c);
 extern void vga_write(const char *s);
+
+#endif

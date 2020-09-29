@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BEANS_KERNEL_DESC_H_
+#define BEANS_KERNEL_DESC_H_
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -23,3 +24,5 @@ extern void idt_set_gate(size_t gate, uint32_t offset, uint16_t selector,
 extern void pic_ack(size_t irq);
 extern void irq_install();
 extern void irq_install_handler(size_t irq, int (*handler)(struct irq_state *));
+
+#endif
