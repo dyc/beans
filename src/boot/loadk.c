@@ -78,8 +78,8 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
     struct smap_entry s = smap[i];
 
     char buf[64] = {0};
-    sprintf(buf, "smap[%d] base: %lld length: %lld type: %d\n", i, s.base,
-            s.length, s.type);
+    sprintf(buf, "smap[%d] base: %ld length: %ld type: %d\n", i,
+            (uint32_t)s.base, (uint32_t)s.length, s.type);
     serial_write(buf);
 
     if (0 == s.base) {
@@ -91,7 +91,7 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
     }
   }
   char buf[64] = {0};
-  sprintf(buf, "[boot_info.mem] lower: %d upper:\n", boot_info.mem_lower,
+  sprintf(buf, "[boot_info.mem] lower: %d upper:%d\n", boot_info.mem_lower,
           boot_info.mem_upper);
   serial_write(buf);
 

@@ -9,8 +9,10 @@ const uint32_t SMAP_TYPE_ACPI_RECLAIMABLE = 3;
 const uint32_t SMAP_TYPE_ACPI_NVS = 4;
 
 struct smap_entry {
-  uint64_t base, length;
-  uint32_t type, unused;
+  uint64_t base;
+  uint64_t length;
+  uint32_t type;
+  uint32_t unused;
 } __attribute__((packed));
 
 #endif
