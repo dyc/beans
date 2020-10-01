@@ -30,4 +30,15 @@ struct elf_header {
   uint16_t sh_strtab_idx;
 } __attribute__((packed));
 
+struct elf_pheader {
+  uint32_t type;
+  uint32_t offset;
+  uint32_t virt_addr;
+  uint32_t phys_addr;
+  uint32_t filesize_bytes;
+  uint32_t memsize_bytes;
+  uint32_t flags;
+  uint32_t alignment;
+} __attribute__((packed));
+
 #endif

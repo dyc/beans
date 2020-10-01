@@ -1,6 +1,7 @@
 #ifndef BEANS_BOOT_MEM_H_
 #define BEANS_BOOT_MEM_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 const uint32_t SMAP_TYPE_RAM = 1;
@@ -14,5 +15,12 @@ struct smap_entry {
   uint32_t type;
   uint32_t unused;
 } __attribute__((packed));
+
+void memset(void *dest, int c, size_t n) {
+  unsigned char *p = dest;
+  for (size_t i = 0; i < n; ++i) {
+    *p = (unsigned char)c;
+  }
+}
 
 #endif

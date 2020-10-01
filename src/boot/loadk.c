@@ -8,8 +8,15 @@
 #include "util.h"
 
 #define ERROR_HANG error(__LINE__);
+#define PRINTF(fmt, ...)                                                       \
+  {                                                                            \
+    memset(buf, 0, sizeof(buf) / sizeof(buf[0]));                              \
+    sprintf(buf, fmt, __VA_ARGS__);                                            \
+    serial_write(buf);                                                         \
+  };
 
 static struct multiboot_info boot_info = {0};
+static char buf[64] = {0};
 
 static void kmain() {
   serial_write("                                 \n");
@@ -39,9 +46,7 @@ static void kmain() {
 }
 
 static void error(size_t line_num) {
-  char buf[16] = {0};
-  sprintf(buf, "err: %d", line_num);
-  serial_write(buf);
+  PRINTF(buf, "err: %d", line_num);
   while (1)
     ;
 }
@@ -53,6 +58,20 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
            uint32_t *initrd) {
   (void)initrd;
   serial_enable();
+
+  for (size_t i = 0; i < smaps; ++i) {
+    struct smap_entry s = smap[i];
+    PRINTF("smap[%d] base: %ld length: %ld type: %d\n", i, (long)s.base,
+           (long)s.length, s.type);
+    if (0 == s.base) {
+      boot_info.mem_lower = s.length;
+    }
+    if (0x100000 <= s.base && SMAP_TYPE_RAM == s.type) {
+      boot_info.mem_upper += s.length;
+    }
+  }
+  PRINTF("[boot_info.mem] lower: %d upper: %d\n", boot_info.mem_lower,
+         boot_info.mem_upper);
 
   struct elf_header *kernel_elf = (struct elf_header *)kernel;
   if (ELF_IDENT_MAGIC0 != kernel_elf->ident[0] ||
@@ -74,26 +93,15 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
     ERROR_HANG;
   }
 
-  for (size_t i = 0; i < smaps; ++i) {
-    struct smap_entry s = smap[i];
-
-    char buf[64] = {0};
-    sprintf(buf, "smap[%d] base: %ld length: %ld type: %d\n", i,
-            (uint32_t)s.base, (uint32_t)s.length, s.type);
-    serial_write(buf);
-
-    if (0 == s.base) {
-      boot_info.mem_lower = s.length;
-    }
-
-    if (0x100000 <= s.base && SMAP_TYPE_RAM == s.type) {
-      boot_info.mem_upper += s.length;
-    }
+  uint32_t *pheader_base = kernel + kernel_elf->ph_offset_bytes;
+  PRINTF("pheader_offset: %d\n", (uint32_t)kernel_elf->ph_offset_bytes);
+  PRINTF("pheader_base: %d\n", (uint32_t)pheader_base);
+  for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
+    struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
+                                  (i * kernel_elf->ph_ent_size_bytes);
+    PRINTF(buf, "pheaders[%d] type: %d vaddr: %d\n", i, pheader->type,
+           pheader->virt_addr);
   }
-  char buf[64] = {0};
-  sprintf(buf, "[boot_info.mem] lower: %d upper:%d\n", boot_info.mem_lower,
-          boot_info.mem_upper);
-  serial_write(buf);
 
   kmain();
 }
