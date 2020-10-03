@@ -93,9 +93,9 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
     ERROR_HANG;
   }
 
-  uint32_t *pheader_base = kernel + kernel_elf->ph_offset_bytes;
-  PRINTF("pheader_offset: %d\n", (uint32_t)kernel_elf->ph_offset_bytes);
-  PRINTF("pheader_base: %d\n", (uint32_t)pheader_base);
+  uint8_t *pheader_base = ((uint8_t *)kernel) + kernel_elf->ph_offset_bytes;
+  PRINTF(buf, "reading %d pheaders starting at %d\n", kernel_elf->ph_ents,
+         pheader_base);
   for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
     struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
                                   (i * kernel_elf->ph_ent_size_bytes);
