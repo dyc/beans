@@ -17,6 +17,13 @@
 
 static struct multiboot_info boot_info = {0};
 static char buf[64] = {0};
+static uint32_t kmain_entry = 0;
+
+static void error(size_t line_num) {
+  PRINTF("err: %d", line_num);
+  while (1)
+    ;
+}
 
 static void kmain() {
   serial_write("                                 \n");
@@ -41,14 +48,8 @@ static void kmain() {
   serial_write("                 ||----w |       \n");
   serial_write("                 ||     ||       \n");
   serial_write(" =============================== \n");
-  while (1)
-    ;
-}
-
-static void error(size_t line_num) {
-  PRINTF("err: %d", line_num);
-  while (1)
-    ;
+  serial_write("                                 \n");
+  asm volatile("jmp *%0" ::"g"(kmain_entry));
 }
 
 // todo: ...is there another way to do this?
@@ -93,14 +94,28 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
     ERROR_HANG;
   }
 
+  kmain_entry = kernel_elf->entry;
+  PRINTF("kentry: %d\n", kmain_entry)
+
   uint8_t *pheader_base = ((uint8_t *)kernel) + kernel_elf->ph_offset_bytes;
   PRINTF("reading %d pheaders starting at %d\n", kernel_elf->ph_ents,
          pheader_base);
   for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
     struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
                                   (i * kernel_elf->ph_ent_size_bytes);
-    PRINTF("pheaders[%d] type: %d vaddr: %d\n", i, pheader->type,
-           pheader->virt_addr);
+    PRINTF("pheaders[%d] type: %d vaddr: %d memsize: %d\n", i, pheader->type,
+           pheader->virt_addr, pheader->memsize_bytes);
+    if (ELF_PHTYPE_LOAD == pheader->type) {
+      PRINTF("loading data seg (%d bytes) from elf offset %d to vaddr %d\n",
+             pheader->filesize_bytes, pheader->offset, pheader->virt_addr);
+
+      memcpy((void *)pheader->virt_addr, (void *)kernel + pheader->offset,
+             pheader->memsize_bytes);
+      if (pheader->filesize_bytes < pheader->memsize_bytes) {
+        memset((void *)pheader->virt_addr + pheader->filesize_bytes, 0,
+               pheader->memsize_bytes - pheader->filesize_bytes);
+      }
+    }
   }
 
   kmain();

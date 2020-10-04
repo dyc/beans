@@ -12,6 +12,7 @@
 #define ELF_IDENT_L_ENDIAN 1
 #define ELF_TYPE_EXE 2
 #define ELF_ISA_X86 3
+#define ELF_PHTYPE_LOAD 1
 
 struct elf_header {
   uint8_t ident[ELF_IDENT_N];

@@ -16,6 +16,11 @@ void timer_heartbeat(unsigned long t) {
 }
 
 void kmain(struct multiboot_info *mb_info, uint32_t mb_magic) {
+  if (MULTIBOOT_BOOTLOADER_MAGIC != mb_magic) {
+    while (1)
+      ;
+  }
+
   serial_enable(SERIAL_PORT_COM1);
   serial_write(SERIAL_PORT_COM1, "serial enabled\n");
 
@@ -31,16 +36,6 @@ void kmain(struct multiboot_info *mb_info, uint32_t mb_magic) {
 
   keyboard_install();
   serial_write(SERIAL_PORT_COM1, "kbd ready\n");
-
-  if (MULTIBOOT_BOOTLOADER_MAGIC != mb_magic) {
-    sprintf(scratchbuf, "eax: %d\n", mb_magic);
-    serial_write(SERIAL_PORT_COM1, "multiboot magic check failed\n");
-    serial_write(SERIAL_PORT_COM1, scratchbuf);
-    while (1)
-      ;
-  } else {
-    serial_write(SERIAL_PORT_COM1, "multiboot magic seems ok\n");
-  }
 
   if (mb_info->flags & MULTIBOOT_INFO_MODS) {
     sprintf(scratchbuf, "found %d modules\n", mb_info->mods_count);

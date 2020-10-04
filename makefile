@@ -200,6 +200,11 @@ gdb: debug $(BOOT_BUILD_DIR)/loadk | $(SYMBOLS_BUILD_DIR)
 	$(OBJCOPY) --only-keep-debug $(BOOT_BUILD_DIR)/loadk $(SYMBOLS_BUILD_DIR)/loadk.debug
 	qemu-system-i386 -s -S -serial stdio -drive format=raw,file=$(BIN_DIR)/beans.img
 
+.PHONY: lint
+lint:
+	clang-format -i $(shell find . -name *.c)
+	clang-format -i $(shell find . -name *.h)
+
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
