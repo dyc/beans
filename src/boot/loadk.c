@@ -11,7 +11,7 @@
 #define PRINTF(fmt, ...)                                                       \
   {                                                                            \
     memset(buf, 0, sizeof(buf) / sizeof(buf[0]));                              \
-    sprintf(buf, fmt, __VA_ARGS__);                                            \
+    sprintf(buf, fmt, ##__VA_ARGS__);                                          \
     serial_write(buf);                                                         \
   };
 
@@ -46,7 +46,7 @@ static void kmain() {
 }
 
 static void error(size_t line_num) {
-  PRINTF(buf, "err: %d", line_num);
+  PRINTF("err: %d", line_num);
   while (1)
     ;
 }
@@ -94,12 +94,12 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
   }
 
   uint8_t *pheader_base = ((uint8_t *)kernel) + kernel_elf->ph_offset_bytes;
-  PRINTF(buf, "reading %d pheaders starting at %d\n", kernel_elf->ph_ents,
+  PRINTF("reading %d pheaders starting at %d\n", kernel_elf->ph_ents,
          pheader_base);
   for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
     struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
                                   (i * kernel_elf->ph_ent_size_bytes);
-    PRINTF(buf, "pheaders[%d] type: %d vaddr: %d\n", i, pheader->type,
+    PRINTF("pheaders[%d] type: %d vaddr: %d\n", i, pheader->type,
            pheader->virt_addr);
   }
 

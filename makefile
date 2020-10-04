@@ -98,6 +98,11 @@ debug: KMODCFLAGS:=$(filter-out -O2,$(KMODCFLAGS))
 debug: KMODCFLAGS+=-g
 debug: all
 
+force: BCFLAGS:=$(filter-out -Werror,$(BCFLAGS))
+force: KCFLAGS:=$(filter-out -Werror,$(KCFLAGS))
+force: KMODCFLAGS:=$(filter-out -Werror,$(KMODCFLAGS))
+force: all
+
 # directories
 $(BOOT_OBJS): | $(BOOT_BUILD_DIR)
 $(BOOT_BUILD_DIR):

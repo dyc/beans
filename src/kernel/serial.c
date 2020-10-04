@@ -43,7 +43,7 @@ void serial_set_baud(enum serial_port p, unsigned short divisor) {
   uint8_t prevline = inb(linecontrol_reg(p));
   outb(linecontrol_reg(p), ENABLE_SET_DIVISOR);
   outb(data_reg(p), (divisor >> 8) & 0xFF);
-  outb(data_reg(p), divisor & 0xFF);
+  outb(intenable_reg(p), divisor & 0xFF);
   // seems like folks usually write something like
   // DEFAULT_LINE_CONFIG in lieu of prevline
   outb(linecontrol_reg(p), prevline);

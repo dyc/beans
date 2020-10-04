@@ -17,9 +17,9 @@ struct smap_entry {
 } __attribute__((packed));
 
 void memset(void *dest, int c, size_t n) {
-  unsigned char *p = dest;
+  unsigned char *p = (unsigned char *)dest;
   for (size_t i = 0; i < n; ++i) {
-    *p = (unsigned char)c;
+    p[i] = (unsigned char)c;
   }
 }
 
