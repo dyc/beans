@@ -49,7 +49,18 @@ static void kmain() {
   serial_write("                 ||     ||       \n");
   serial_write(" =============================== \n");
   serial_write("                                 \n");
-  asm volatile("jmp *%0" ::"g"(kmain_entry));
+  uint32_t ret = (uint32_t)__builtin_return_address(0);
+  PRINTF("[kmain] mb header: %d\n", (uint32_t)&boot_info);
+  PRINTF("[kmain] return addr: %d\n", ret);
+
+  // todo: fix return addr
+  asm volatile("mov %0, %%eax\n"
+               "mov %1, %%ebx\n"
+               "pushl %%eax\n"
+               "pushl %%ebx\n"
+               "pushl %2\n"
+               "jmp *%3\n" ::"i"(MULTIBOOT_BOOTLOADER_MAGIC),
+               "p"((uint32_t)&boot_info), "p"(ret), "g"(kmain_entry));
 }
 
 // todo: ...is there another way to do this?
@@ -119,4 +130,5 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
   }
 
   kmain();
+  ERROR_HANG
 }
