@@ -5,6 +5,11 @@
 
 const uint32_t MULTIBOOT_BOOTLOADER_MAGIC = 0x2BADB002;
 const uint32_t MULTIBOOT_INFO_MODS = 0x00000008;
+const uint32_t MULTIBOOT_MMAP_AVAILABLE = 1;
+const uint32_t MULTIBOOT_MMAP_RESERVED = 2;
+const uint32_t MULTIBOOT_MMAP_ACPI_RECLAIMABLE = 3;
+const uint32_t MULTIBOOT_MMAP_ACPI_NVS = 4;
+const uint32_t MULTIBOOT_MMAP_BAD = 5;
 
 struct multiboot_aout_symbol_table {
   uint32_t tabsize;
@@ -76,6 +81,13 @@ struct multiboot_module {
   uint32_t mod_end;
   uint32_t cmdline;
   uint32_t pad;
+};
+
+struct multiboot_mmap_entry {
+  uint64_t base;
+  uint64_t length;
+  uint32_t type;
+  uint32_t unused;
 };
 
 #endif

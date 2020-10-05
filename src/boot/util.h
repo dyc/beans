@@ -58,6 +58,32 @@ static size_t decllwidth(long long value) {
   return width;
 }
 
+static size_t hexwidth(int value) {
+  if (value < 0) {
+    value *= -1;
+  }
+
+  size_t width = 0;
+  do {
+    ++width;
+    value >>= 4;
+  } while (value > 0);
+  return width;
+}
+
+static size_t hexlwidth(long value) {
+  if (value < 0) {
+    value *= -1;
+  }
+
+  size_t width = 0;
+  do {
+    ++width;
+    value >>= 4;
+  } while (value > 0);
+  return width;
+}
+
 static int printdec(char *out, int value) {
   char *stop = out;
   if (value < 0) {
@@ -103,6 +129,54 @@ static int printdecll(char *out, long long value) {
   return start - out + 1;
 }
 
+static int printhex(char *out, int value) {
+  char *stop = out;
+  if (value < 0) {
+    *stop = '-';
+    ++stop;
+  }
+  *stop = '0';
+  ++stop;
+  *stop = 'x';
+  ++stop;
+
+  char *start = stop + hexwidth(value) - 1;
+  for (char *o = start; o >= stop; --o) {
+    int r = value % 16;
+    if (r > 9) {
+      *o = (r - 10) + 'A';
+    } else {
+      *o = r + '0';
+    }
+    value >>= 4;
+  }
+  return start - out + 1;
+}
+
+static int printhexl(char *out, long value) {
+  char *stop = out;
+  if (value < 0) {
+    *stop = '-';
+    ++stop;
+  }
+  *stop = '0';
+  ++stop;
+  *stop = 'x';
+  ++stop;
+
+  char *start = stop + hexlwidth(value) - 1;
+  for (char *o = start; o >= stop; --o) {
+    int r = value % 16;
+    if (r > 9) {
+      *o = (r - 10) + 'A';
+    } else {
+      *o = r + '0';
+    }
+    value >>= 4;
+  }
+  return start - out + 1;
+}
+
 size_t strlen(const char *s) {
   size_t len = 0;
   while (s[len]) {
@@ -144,6 +218,15 @@ int sprintf(char *out, const char *fmt, ...) {
         o += printdecl(o, va_arg(arg_p, long));
       } else if (2 == length_modifier) {
         o += printdecll(o, va_arg(arg_p, long long));
+      }
+      ++f;
+      break;
+    }
+    case 'x': {
+      if (0 == length_modifier) {
+        o += printhex(o, va_arg(arg_p, int));
+      } else if (1 == length_modifier) {
+        o += printhexl(o, va_arg(arg_p, long));
       }
       ++f;
       break;

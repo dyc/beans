@@ -17,7 +17,7 @@
 
 static struct multiboot_info boot_info = {0};
 static char buf[64] = {0};
-static uint32_t kmain_entry = 0;
+static uint32_t kentry = 0;
 
 static void error(size_t line_num) {
   PRINTF("err: %d", line_num);
@@ -25,7 +25,7 @@ static void error(size_t line_num) {
     ;
 }
 
-static void kmain() {
+static void woohoo() {
   serial_write("                                 \n");
   serial_write("  ________________               \n");
   serial_write(" /  ____ < ow >   \\             \n");
@@ -50,8 +50,8 @@ static void kmain() {
   serial_write(" =============================== \n");
   serial_write("                                 \n");
   uint32_t ret = (uint32_t)__builtin_return_address(0);
-  PRINTF("[kmain] mb header: %d\n", (uint32_t)&boot_info);
-  PRINTF("[kmain] return addr: %d\n", ret);
+  PRINTF("[woohoo] mb header: %x\n", (uint32_t)&boot_info);
+  PRINTF("[woohoo] return addr: %x\n", ret);
 
   // todo: fix return addr
   asm volatile("mov %0, %%eax\n"
@@ -60,7 +60,7 @@ static void kmain() {
                "pushl %%ebx\n"
                "pushl %2\n"
                "jmp *%3\n" ::"i"(MULTIBOOT_BOOTLOADER_MAGIC),
-               "p"((uint32_t)&boot_info), "p"(ret), "g"(kmain_entry));
+               "p"((uint32_t)&boot_info), "p"(ret), "g"(kentry));
 }
 
 // todo: ...is there another way to do this?
@@ -73,7 +73,7 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
 
   for (size_t i = 0; i < smaps; ++i) {
     struct smap_entry s = smap[i];
-    PRINTF("smap[%d] base: %ld length: %ld type: %d\n", i, (long)s.base,
+    PRINTF("smap[%d] base: %lx length: %lx type: %d\n", i, (long)s.base,
            (long)s.length, s.type);
     if (0 == s.base) {
       boot_info.mem_lower = s.length;
@@ -82,7 +82,7 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
       boot_info.mem_upper += s.length;
     }
   }
-  PRINTF("[boot_info.mem] lower: %d upper: %d\n", boot_info.mem_lower,
+  PRINTF("[boot_info.mem] lower: %x upper: %x\n", boot_info.mem_lower,
          boot_info.mem_upper);
 
   struct elf_header *kernel_elf = (struct elf_header *)kernel;
@@ -105,19 +105,19 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
     ERROR_HANG;
   }
 
-  kmain_entry = kernel_elf->entry;
-  PRINTF("kentry: %d\n", kmain_entry)
+  kentry = kernel_elf->entry;
+  PRINTF("kentry: %x\n", kentry)
 
   uint8_t *pheader_base = ((uint8_t *)kernel) + kernel_elf->ph_offset_bytes;
-  PRINTF("reading %d pheaders starting at %d\n", kernel_elf->ph_ents,
+  PRINTF("reading %d pheaders starting at %x\n", kernel_elf->ph_ents,
          pheader_base);
   for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
     struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
                                   (i * kernel_elf->ph_ent_size_bytes);
-    PRINTF("pheaders[%d] type: %d vaddr: %d memsize: %d\n", i, pheader->type,
+    PRINTF("pheaders[%d] type: %d vaddr: %x memsize: %x\n", i, pheader->type,
            pheader->virt_addr, pheader->memsize_bytes);
     if (ELF_PHTYPE_LOAD == pheader->type) {
-      PRINTF("loading data seg (%d bytes) from elf offset %d to vaddr %d\n",
+      PRINTF("loading data seg (%d bytes) from elf offset %x to vaddr %x\n",
              pheader->filesize_bytes, pheader->offset, pheader->virt_addr);
 
       memcpy((void *)pheader->virt_addr, (void *)kernel + pheader->offset,
@@ -129,6 +129,6 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
     }
   }
 
-  kmain();
+  woohoo();
   ERROR_HANG
 }
