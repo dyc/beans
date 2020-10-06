@@ -1,13 +1,13 @@
-.set ALIGN,    1<<0
-.set MEMINFO,  1<<1
-.set FLAGS,    ALIGN | MEMINFO
-.set MAGIC,    0x1BADB002
-.set CHECKSUM, -(MAGIC + FLAGS)
+.set MAGIC,    0xE85250D6
+.set ISA,      0
+.set LENGTH,   0x10
+.set CHECKSUM, -(MAGIC + ISA + LENGTH)
 
-.section .multiboot
+.section .multiboot2
 .align 4
 .long MAGIC
-.long FLAGS
+.long ISA
+.long LENGTH
 .long CHECKSUM
 
 .section .bss

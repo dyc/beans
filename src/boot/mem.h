@@ -11,7 +11,7 @@ const uint32_t SMAP_TYPE_ACPI_NVS = 4;
 
 struct smap_entry {
   uint64_t base;
-  uint64_t length;
+  uint64_t size;
   uint32_t type;
   uint32_t unused;
 } __attribute__((packed));

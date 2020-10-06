@@ -4,7 +4,7 @@
 #include "elf.h"
 #include "io.h"
 #include "mem.h"
-#include "multiboot.h"
+#include "multiboot2.h"
 #include "util.h"
 
 #define ERROR_HANG error(__LINE__);
@@ -15,9 +15,10 @@
     serial_write(buf);                                                         \
   };
 
-static struct multiboot_info boot_info = {0};
+static const uint32_t KERNEL_START_PHYS = 0x100000;
 static char buf[64] = {0};
 static uint32_t kentry = 0;
+static uintptr_t mb2_addr = 0;
 
 static void error(size_t line_num) {
   PRINTF("err: %d", line_num);
@@ -50,7 +51,7 @@ static void woohoo() {
   serial_write(" =============================== \n");
   serial_write("                                 \n");
   uint32_t ret = (uint32_t)__builtin_return_address(0);
-  PRINTF("[woohoo] mb header: %x\n", (uint32_t)&boot_info);
+  PRINTF("[woohoo] mb2: %x\n", (uint32_t)mb2_addr);
   PRINTF("[woohoo] return addr: %x\n", ret);
 
   // todo: fix return addr
@@ -59,31 +60,62 @@ static void woohoo() {
                "pushl %%eax\n"
                "pushl %%ebx\n"
                "pushl %2\n"
-               "jmp *%3\n" ::"i"(MULTIBOOT_BOOTLOADER_MAGIC),
-               "p"((uint32_t)&boot_info), "p"(ret), "g"(kentry));
+               "jmp *%3\n" ::"i"(MB2_BOOTLOADER_MAGIC),
+               "p"((uint32_t)mb2_addr), "p"(ret), "g"(kentry));
 }
 
-// todo: ...is there another way to do this?
-void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
-           uint32_t *initrd) __attribute__((section(".text.loadk")));
-void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
-           uint32_t *initrd) {
+__attribute__((section(".text.loadk"))) void loadk(size_t smaps,
+                                                   struct smap_entry *smap,
+                                                   uint32_t *kernel,
+                                                   uint32_t *initrd) {
   (void)initrd;
   serial_enable();
 
+  size_t mmap_size = sizeof(struct mb2_mmap_entry) * smaps;
+  PRINTF("allocating %d bytes for %d mb2 mmap entries at %x\n", mmap_size,
+         smaps, KERNEL_START_PHYS);
+  memset((void *)KERNEL_START_PHYS, 0, mmap_size);
+
+  mb2_addr = KERNEL_START_PHYS + mmap_size;
+  PRINTF("starting mb2 after mmap entries at %x\n", mb2_addr);
+  uintptr_t mb2_end = mb2_addr;
+
+  struct mb2_prologue *prologue = (struct mb2_prologue *)mb2_addr;
+  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(prologue));
+
+  struct mb2_mem_info *mem_info = (struct mb2_mem_info *)mb2_end;
+  mem_info->tag.type = MB2_TAG_TYPE_MEM_INFO;
+  mem_info->tag.size = sizeof(mem_info);
+  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(mem_info));
+
+  struct mb2_mmap_entry *mmap_entry =
+      (struct mb2_mmap_entry *)KERNEL_START_PHYS;
+  struct mb2_mmap *mmap = (struct mb2_mmap *)mb2_end;
+  mmap->tag.type = MB2_TAG_TYPE_MMAP;
+  mmap->tag.size = sizeof(mmap);
+  mmap->entry_size = sizeof(mmap_entry);
+  mmap->entries = mmap_entry;
+  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(mmap));
   for (size_t i = 0; i < smaps; ++i) {
     struct smap_entry s = smap[i];
-    PRINTF("smap[%d] base: %lx length: %lx type: %d\n", i, (long)s.base,
-           (long)s.length, s.type);
+    PRINTF("smap[%d] base: %lx size: %lx type: %d\n", i, (long)s.base,
+           (long)s.size, s.type);
     if (0 == s.base) {
-      boot_info.mem_lower = s.length;
+      mem_info->mem_lower = s.size;
     }
     if (0x100000 <= s.base && SMAP_TYPE_RAM == s.type) {
-      boot_info.mem_upper += s.length;
+      mem_info->mem_upper += s.size;
     }
+
+    mmap_entry->base = s.base;
+    mmap_entry->size = s.size;
+    mmap_entry->type = s.type;
+    PRINTF("mmap[%x] base: %lx size: %lx type: %d\n", mmap_entry,
+           (long)mmap_entry->base, (long)mmap_entry->size, mmap_entry->type);
+    ++mmap_entry;
   }
-  PRINTF("[boot_info.mem] lower: %x upper: %x\n", boot_info.mem_lower,
-         boot_info.mem_upper);
+  PRINTF("[boot_info.mem] lower: %x upper: %x\n", mem_info->mem_lower,
+         mem_info->mem_upper);
 
   struct elf_header *kernel_elf = (struct elf_header *)kernel;
   if (ELF_IDENT_MAGIC0 != kernel_elf->ident[0] ||
@@ -129,6 +161,7 @@ void loadk(size_t smaps, struct smap_entry *smap, uint32_t *kernel,
     }
   }
 
+  prologue->size = (uint32_t)mb2_end - mb2_addr;
   woohoo();
   ERROR_HANG
 }
