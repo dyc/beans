@@ -6,6 +6,14 @@
 
 #include "io.h"
 
+size_t strlen(const char *s) {
+  size_t len = 0;
+  while (s[len]) {
+    ++len;
+  }
+  return len;
+}
+
 // todo: these
 long long __divdi3(long long a, long long b) {
   (void)a;
@@ -177,12 +185,12 @@ static int printhexl(char *out, long value) {
   return start - out + 1;
 }
 
-size_t strlen(const char *s) {
-  size_t len = 0;
-  while (s[len]) {
-    len++;
+static int printstr(char *out, char *s) {
+  size_t n = strlen(s);
+  for (size_t i = 0; i < n; ++i) {
+    out[i] = s[i];
   }
-  return len;
+  return n;
 }
 
 int sprintf(char *out, const char *fmt, ...) {
@@ -222,6 +230,11 @@ int sprintf(char *out, const char *fmt, ...) {
       ++f;
       break;
     }
+    case 's': {
+      o += printstr(o, va_arg(arg_p, char *));
+      ++f;
+      break;
+    }
     case 'x': {
       if (0 == length_modifier) {
         o += printhex(o, va_arg(arg_p, int));
@@ -238,7 +251,7 @@ int sprintf(char *out, const char *fmt, ...) {
   }
   va_end(arg_p);
 
-  *o = '\0';
+  *o = 0;
   return o - out;
 }
 

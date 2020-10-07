@@ -7,21 +7,22 @@
 #include "multiboot2.h"
 #include "util.h"
 
-#define ERROR_HANG error(__LINE__);
 #define PRINTF(fmt, ...)                                                       \
   {                                                                            \
     memset(buf, 0, sizeof(buf) / sizeof(buf[0]));                              \
-    sprintf(buf, fmt, ##__VA_ARGS__);                                          \
+    int n = sprintf(buf, "[%s:%d] ", __func__, __LINE__);                      \
+    sprintf(&buf[n], fmt, ##__VA_ARGS__);                                      \
     serial_write(buf);                                                         \
   };
 
-static const uint32_t KERNEL_START_PHYS = 0x100000;
-static char buf[64] = {0};
+// todo: change this back to 1mb once we have higher half kernel
+static const uint32_t KERNEL_START_PHYS = 0x200000;
+static char buf[256] = {0};
 static uint32_t kentry = 0;
 static uintptr_t mb2_addr = 0;
 
-static void error(size_t line_num) {
-  PRINTF("err: %d", line_num);
+static void error() {
+  PRINTF(":-(");
   while (1)
     ;
 }
@@ -51,8 +52,8 @@ static void woohoo() {
   serial_write(" =============================== \n");
   serial_write("                                 \n");
   uint32_t ret = (uint32_t)__builtin_return_address(0);
-  PRINTF("[woohoo] mb2: %x\n", (uint32_t)mb2_addr);
-  PRINTF("[woohoo] return addr: %x\n", ret);
+  PRINTF("mb2 %x\n", (uint32_t)mb2_addr);
+  PRINTF("return addr %x\n", ret);
 
   // todo: fix return addr
   asm volatile("mov %0, %%eax\n"
@@ -61,7 +62,7 @@ static void woohoo() {
                "pushl %%ebx\n"
                "pushl %2\n"
                "jmp *%3\n" ::"i"(MB2_BOOTLOADER_MAGIC),
-               "p"((uint32_t)mb2_addr), "p"(ret), "g"(kentry));
+               "g"((uint32_t)mb2_addr), "g"(ret), "g"(kentry));
 }
 
 __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
@@ -72,12 +73,14 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   serial_enable();
 
   size_t mmap_size = sizeof(struct mb2_mmap_entry) * smaps;
-  PRINTF("allocating %d bytes for %d mb2 mmap entries at %x\n", mmap_size,
-         smaps, KERNEL_START_PHYS);
+  // pad so that mb2_addr is 8 byte aligned
+  mmap_size += (mmap_size % 8);
+  PRINTF("allocating %d bytes for %d mb2 mmap entries at %x\n",
+         (uint32_t)mmap_size, (uint32_t)smaps, KERNEL_START_PHYS);
   memset((void *)KERNEL_START_PHYS, 0, mmap_size);
 
   mb2_addr = KERNEL_START_PHYS + mmap_size;
-  PRINTF("starting mb2 after mmap entries at %x\n", mb2_addr);
+  PRINTF("starting mb2 after mmap entries at %x\n", (uint32_t)mb2_addr);
   uintptr_t mb2_end = mb2_addr;
 
   struct mb2_prologue *prologue = (struct mb2_prologue *)mb2_addr;
@@ -98,7 +101,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(mmap));
   for (size_t i = 0; i < smaps; ++i) {
     struct smap_entry s = smap[i];
-    PRINTF("smap[%d] base: %lx size: %lx type: %d\n", i, (long)s.base,
+    PRINTF("smap[%ld] base %lx size %lx type %d\n", i, (long)s.base,
            (long)s.size, s.type);
     if (0 == s.base) {
       mem_info->mem_lower = s.size;
@@ -110,11 +113,11 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
     mmap_entry->base = s.base;
     mmap_entry->size = s.size;
     mmap_entry->type = s.type;
-    PRINTF("mmap[%x] base: %lx size: %lx type: %d\n", mmap_entry,
+    PRINTF("mmap[%x] base %lx size %lx type %d\n", (uint32_t)mmap_entry,
            (long)mmap_entry->base, (long)mmap_entry->size, mmap_entry->type);
     ++mmap_entry;
   }
-  PRINTF("[boot_info.mem] lower: %x upper: %x\n", mem_info->mem_lower,
+  PRINTF("boot_info.mem: lower %x upper %x\n", mem_info->mem_lower,
          mem_info->mem_upper);
 
   struct elf_header *kernel_elf = (struct elf_header *)kernel;
@@ -122,32 +125,32 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
       ELF_IDENT_MAGIC1 != kernel_elf->ident[1] ||
       ELF_IDENT_MAGIC2 != kernel_elf->ident[2] ||
       ELF_IDENT_MAGIC3 != kernel_elf->ident[3]) {
-    ERROR_HANG;
+    error();
   }
   if (ELF_IDENT_32BIT != kernel_elf->ident[4]) {
-    ERROR_HANG;
+    error();
   }
   if (ELF_IDENT_L_ENDIAN != kernel_elf->ident[5]) {
-    ERROR_HANG;
+    error();
   }
   if (ELF_TYPE_EXE != kernel_elf->type) {
-    ERROR_HANG;
+    error();
   }
   if (ELF_ISA_X86 != kernel_elf->isa) {
-    ERROR_HANG;
+    error();
   }
 
   kentry = kernel_elf->entry;
-  PRINTF("kentry: %x\n", kentry)
+  PRINTF("kentry %x\n", kentry)
 
   uint8_t *pheader_base = ((uint8_t *)kernel) + kernel_elf->ph_offset_bytes;
   PRINTF("reading %d pheaders starting at %x\n", kernel_elf->ph_ents,
-         pheader_base);
+         (uint32_t)pheader_base);
   for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
     struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
                                   (i * kernel_elf->ph_ent_size_bytes);
-    PRINTF("pheaders[%d] type: %d vaddr: %x memsize: %x\n", i, pheader->type,
-           pheader->virt_addr, pheader->memsize_bytes);
+    PRINTF("pheaders[%ld] type %d vaddr %lx memsize %x\n", i, pheader->type,
+           (long)pheader->virt_addr, pheader->memsize_bytes);
     if (ELF_PHTYPE_LOAD == pheader->type) {
       PRINTF("loading data seg (%d bytes) from elf offset %x to vaddr %x\n",
              pheader->filesize_bytes, pheader->offset, pheader->virt_addr);
@@ -162,6 +165,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   }
 
   prologue->size = (uint32_t)mb2_end - mb2_addr;
+  PRINTF("final mb2 size %d bytes\n", prologue->size);
   woohoo();
-  ERROR_HANG
+  error();
 }
