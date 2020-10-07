@@ -28,7 +28,7 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   serial_enable(SERIAL_PORT_COM1);
   PRINTF("serial enabled\n");
   PRINTF("mb2 %x (mb2 & 0x7 = %d)\n", (uint32_t)mb2, ((uint32_t)mb2 & 0x7));
-  PRINTF("return addr %x\n", __builtin_return_address(0));
+  PRINTF("return addr %x\n", __builtin_return_address(1));
 
   if (MB2_BOOTLOADER_MAGIC != mb2_magic) {
     return;
