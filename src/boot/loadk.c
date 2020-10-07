@@ -51,18 +51,14 @@ static void woohoo() {
   serial_write("                 ||     ||       \n");
   serial_write(" =============================== \n");
   serial_write("                                 \n");
-  uint32_t ret = (uint32_t)__builtin_return_address(0);
   PRINTF("mb2 %x\n", (uint32_t)mb2_addr);
-  PRINTF("return addr %x\n", ret);
 
-  // todo: fix return addr
   asm volatile("mov %0, %%eax\n"
                "mov %1, %%ebx\n"
                "pushl %%eax\n"
                "pushl %%ebx\n"
-               "pushl %2\n"
-               "jmp *%3\n" ::"i"(MB2_BOOTLOADER_MAGIC),
-               "g"((uint32_t)mb2_addr), "g"(ret), "g"(kentry));
+               "jmp *%2\n" ::"i"(MB2_BOOTLOADER_MAGIC),
+               "g"((uint32_t)mb2_addr), "g"(kentry));
 }
 
 __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
@@ -167,5 +163,4 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   prologue->size = (uint32_t)mb2_end - mb2_addr;
   PRINTF("final mb2 size %d bytes\n", prologue->size);
   woohoo();
-  error();
 }
