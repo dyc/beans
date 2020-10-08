@@ -18,6 +18,7 @@ LIB_BUILD_DIR:=$(BUILD_DIR)/lib
 LIBC_BUILD_DIR:=$(BUILD_DIR)/libc
 SYMBOLS_BUILD_DIR:=$(BUILD_DIR)/sym
 HOST_BUILD_DIR:=$(BUILD_DIR)/host
+RAMDISK_BUILD_DIR:=$(BUILD_DIR)/ramdisk
 
 SRC_DIR:=src
 BOOT_SRC_DIR:=$(SRC_DIR)/boot
@@ -30,6 +31,7 @@ LIBC_SRC_DIR:=$(SRC_DIR)/libc
 SYSROOT_SRC_DIR:=$(SRC_DIR)/sysroot
 LINKER_SRC_DIR:=$(SRC_DIR)/linker
 HOST_DIR:=host
+HOST_SCRIPTS_DIR:=$(HOST_DIR)/scripts
 
 # keep intermediates on fail
 .SECONDARY:
@@ -80,6 +82,11 @@ KERNEL_MODS:=$(patsubst %.c,%.ko,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.c))
 KERNEL_MODS+=$(patsubst %.S,%.ko,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.S))
 KERNEL_MODS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_MODS))
 MODULE_LINKER_SCRIPT:=$(LINKER_SRC_DIR)/module.ld
+
+## ramdisk ##
+RAMDISK_SRC_OBJS:=$(KERNEL_MOD_BUILD_DIR)/ata.ko
+RAMDISK_OBJS:=$(notdir $(RAMDISK_SRC_OBJS))
+RAMDISK_OBJS:=$(patsubst %,$(RAMDISK_BUILD_DIR)/%,$(RAMDISK_OBJS))
 
 #### lib ####
 # todo: shared libraries
@@ -143,6 +150,10 @@ $(LIBC_OBJS): | $(LIBC_BUILD_DIR)
 $(LIBC_BUILD_DIR):
 	mkdir -p $@
 
+ramdisk: | $(RAMDISK_BUILD_DIR)
+$(RAMDISK_BUILD_DIR):
+	mkdir -p $@
+
 $(HOST_BINS): | $(HOST_BUILD_DIR)
 $(HOST_BUILD_DIR):
 	mkdir -p $@
@@ -193,12 +204,17 @@ $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 $(BOOT_BUILD_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -o $@ $^
 
+.PHONY: ramdisk
+ramdisk: $(RAMDISK_SRC_OBJS)
+	for f in $(RAMDISK_SRC_OBJS); do cp -f $$f $(RAMDISK_BUILD_DIR); done
+
 # todo: actually make this
-$(BIN_DIR)/ramdisk.img: $(KERNEL_MOD_BUILD_DIR)/ata.ko
+$(BIN_DIR)/ramdisk.img: $(HOST_BUILD_DIR)/mkramdisk ramdisk
 	echo "otherwise this file will have cluster number 0" > $@
+	$(HOST_BUILD_DIR)/mkramdisk $(BIN_DIR)/ramdisk.img $(RAMDISK_BUILD_DIR)
 
 $(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
-	./host/scripts/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
+	$(HOST_SCRIPTS_DIR)/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
 
 # todo: make this cross compatible
 $(HOST_BUILD_DIR)/%: $(HOST_DIR)/%.c
