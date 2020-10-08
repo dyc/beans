@@ -41,6 +41,14 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
        MB2_TAG_TYPE_END != tag->type;
        tag = (struct mb2_tag *)(((uint8_t *)tag) + tag->size)) {
     PRINTF("tag type %d\n", tag->type);
+    switch (tag->type) {
+    case MB2_TAG_TYPE_MEM_INFO: {
+      break;
+    }
+    case MB2_TAG_TYPE_MMAP: {
+      break;
+    }
+    }
   }
 
   // gdt_install();

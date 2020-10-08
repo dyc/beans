@@ -5,6 +5,8 @@
 
 const uint32_t MB2_BOOTLOADER_MAGIC = 0x36d76289;
 const uint32_t MB2_TAG_TYPE_END = 0;
+const uint32_t MB2_TAG_TYPE_MEM_INFO = 4;
+const uint32_t MB2_TAG_TYPE_MMAP = 6;
 
 struct mb2_prologue {
   uint32_t size;

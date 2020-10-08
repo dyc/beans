@@ -80,21 +80,21 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   uintptr_t mb2_end = mb2_addr;
 
   struct mb2_prologue *prologue = (struct mb2_prologue *)mb2_addr;
-  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(prologue));
+  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(struct mb2_prologue));
 
   struct mb2_mem_info *mem_info = (struct mb2_mem_info *)mb2_end;
   mem_info->tag.type = MB2_TAG_TYPE_MEM_INFO;
-  mem_info->tag.size = sizeof(mem_info);
-  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(mem_info));
+  mem_info->tag.size = sizeof(struct mb2_mem_info);
+  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(struct mb2_mem_info));
 
   struct mb2_mmap_entry *mmap_entry =
       (struct mb2_mmap_entry *)KERNEL_START_PHYS;
   struct mb2_mmap *mmap = (struct mb2_mmap *)mb2_end;
   mmap->tag.type = MB2_TAG_TYPE_MMAP;
-  mmap->tag.size = sizeof(mmap);
-  mmap->entry_size = sizeof(mmap_entry);
+  mmap->tag.size = sizeof(struct mb2_mmap);
+  mmap->entry_size = sizeof(struct mb2_mmap_entry);
   mmap->entries = mmap_entry;
-  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(mmap));
+  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(struct mb2_mmap));
   for (size_t i = 0; i < smaps; ++i) {
     struct smap_entry s = smap[i];
     PRINTF("smap[%ld] base %lx size %lx type %d\n", i, (long)s.base,
@@ -159,6 +159,11 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
       }
     }
   }
+
+  struct mb2_tag *sentinel = (struct mb2_tag *)mb2_end;
+  sentinel->type = MB2_TAG_TYPE_END;
+  sentinel->size = sizeof(struct mb2_tag);
+  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(struct mb2_tag));
 
   prologue->size = (uint32_t)mb2_end - mb2_addr;
   PRINTF("final mb2 size %d bytes\n", prologue->size);
