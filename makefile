@@ -3,6 +3,7 @@ AS:=$(PREFIX)/bin/i686-elf-as
 CC:=$(PREFIX)/bin/i686-elf-gcc
 LD:=$(PREFIX)/bin/i686-elf-ld
 OBJCOPY:=$(PREFIX)/bin/i686-elf-objcopy
+HOSTCC:=/usr/bin/gcc
 
 BUILD_DIR:=build
 BIN_DIR:=$(BUILD_DIR)/bin
@@ -16,6 +17,7 @@ KERNEL_MOD_BUILD_DIR:=$(KERNEL_BUILD_DIR)/modules
 LIB_BUILD_DIR:=$(BUILD_DIR)/lib
 LIBC_BUILD_DIR:=$(BUILD_DIR)/libc
 SYMBOLS_BUILD_DIR:=$(BUILD_DIR)/sym
+HOST_BUILD_DIR:=$(BUILD_DIR)/host
 
 SRC_DIR:=src
 BOOT_SRC_DIR:=$(SRC_DIR)/boot
@@ -27,18 +29,19 @@ LIB_SRC_DIR:=$(SRC_DIR)/lib
 LIBC_SRC_DIR:=$(SRC_DIR)/libc
 SYSROOT_SRC_DIR:=$(SRC_DIR)/sysroot
 LINKER_SRC_DIR:=$(SRC_DIR)/linker
+HOST_DIR:=host
 
 # keep intermediates on fail
 .SECONDARY:
 
 #### bootloader ####
+BCFLAGS:=-Os -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror
 BOOT_OBJS:=$(patsubst %.S,%.o,$(wildcard $(BOOT_SRC_DIR)/*.S))
 BOOT_OBJS+=$(patsubst %.c,%.o,$(wildcard $(BOOT_SRC_DIR)/*.c))
 BOOT_OBJS:=$(patsubst $(BOOT_SRC_DIR)/%,$(BOOT_BUILD_DIR)/%,$(BOOT_OBJS))
 BOOT_BINS:=$(patsubst %.o,%,$(BOOT_OBJS))
 BOOT_ELFS:=$(BOOT_BINS)
 BOOT_BINS:=$(patsubst $(BOOT_BUILD_DIR)/%,$(BIN_DIR)/%,$(BOOT_BINS))
-BCFLAGS:=-Os -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror
 
 #### kernel ####
 KCFLAGS:=-O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Werror -Isrc/sysroot/usr/include
@@ -67,6 +70,8 @@ KERNEL_LIB_OBJS:=$(filter-out $(wildcard $(KERNEL_ASM_SRC_DIR/*.S)), $(KERNEL_LI
 KERNEL_LIB_OBJS:=$(patsubst $(KERNEL_LIB_SRC_DIR)/%,$(KERNEL_LIB_BUILD_DIR)/%,$(KERNEL_LIB_OBJS))
 
 ## modules ##
+# todo: make these elfs; modules as flat bins for now
+KMODCFLAGS:=-ffreestanding -nostartfiles -nostdlib -fPIE -O2 -Isrc/sysroot/usr/include
 KERNEL_MOD_OBJS:=$(patsubst %.c,%.o,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.c))
 KERNEL_MOD_OBJS+=$(patsubst %.S,%.o,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.S))
 KERNEL_MOD_OBJS:=$(filter-out $(wildcard $(KERNEL_ASM_SRC_DIR/*.S)), $(KERNEL_MOD_OBJS))
@@ -74,8 +79,6 @@ KERNEL_MOD_OBJS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_M
 KERNEL_MODS:=$(patsubst %.c,%.ko,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.c))
 KERNEL_MODS+=$(patsubst %.S,%.ko,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.S))
 KERNEL_MODS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_MODS))
-# todo: make these elfs; modules as flat bins for now
-KMODCFLAGS:=-ffreestanding -nostartfiles -nostdlib -fPIE -O2 -Isrc/sysroot/usr/include
 MODULE_LINKER_SCRIPT:=$(LINKER_SRC_DIR)/module.ld
 
 #### lib ####
@@ -89,6 +92,11 @@ LIB_HEADERS:=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/sys/*.h $(SYSROOT_SRC_DIR
 LIBC_OBJS:=$(patsubst %.c,%.o,$(wildcard $(LIBC_SRC_DIR)/*.c))
 LIBC_OBJS:=$(patsubst $(LIBC_SRC_DIR)/%,$(LIBC_BUILD_DIR)/%,$(LIBC_OBJS))
 LIBC_HEADERS:=$(wildcard $(SYSROOT_SRC_DIR)/usr/include/*.h)
+
+#### host ####
+HOSTCFLAGS:=-O3 -std=gnu99 -Wall -Wextra -Werror 
+HOST_BINS:=$(patsubst %.c,%,$(wildcard $(HOST_DIR)/*.c))
+HOST_BINS:=$(patsubst $(HOST_DIR)/%,$(HOST_BUILD_DIR)/%,$(HOST_BINS))
 
 all: $(BIN_DIR)/beans.img
 
@@ -133,6 +141,10 @@ $(LIB_BUILD_DIR):
 
 $(LIBC_OBJS): | $(LIBC_BUILD_DIR)
 $(LIBC_BUILD_DIR):
+	mkdir -p $@
+
+$(HOST_BINS): | $(HOST_BUILD_DIR)
+$(HOST_BUILD_DIR):
 	mkdir -p $@
 
 $(SYMBOLS_BUILD_DIR):
@@ -187,6 +199,10 @@ $(BIN_DIR)/ramdisk.img: $(KERNEL_MOD_BUILD_DIR)/ata.ko
 
 $(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
 	./host/scripts/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
+
+# todo: make this cross compatible
+$(HOST_BUILD_DIR)/%: $(HOST_DIR)/%.c
+	$(HOSTCC) $(HOSTCFLAGS) $< -o $@
 
 .PHONY: run
 run: $(BIN_DIR)/beans.img
