@@ -46,7 +46,8 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
       struct mb2_module *module = (struct mb2_module *)tag;
       PRINTF("found module with string %s\n", module->string);
       if (!strcmp(module->string, "initrd")) {
-        PRINTF("mounting initrd...\n", module->string);
+        PRINTF("mounting initrd located at %x...\n", module->start,
+               module->string);
         // todo: ^
       }
       break;

@@ -18,7 +18,7 @@ LIB_BUILD_DIR:=$(BUILD_DIR)/lib
 LIBC_BUILD_DIR:=$(BUILD_DIR)/libc
 SYMBOLS_BUILD_DIR:=$(BUILD_DIR)/sym
 HOST_BUILD_DIR:=$(BUILD_DIR)/host
-RAMDISK_BUILD_DIR:=$(BUILD_DIR)/ramdisk
+INITRD_BUILD_DIR:=$(BUILD_DIR)/initrd
 
 SRC_DIR:=src
 BOOT_SRC_DIR:=$(SRC_DIR)/boot
@@ -83,10 +83,10 @@ KERNEL_MODS+=$(patsubst %.S,%.ko,$(wildcard $(KERNEL_MOD_SRC_DIR)/*.S))
 KERNEL_MODS:=$(patsubst $(KERNEL_SRC_DIR)/%,$(KERNEL_BUILD_DIR)/%,$(KERNEL_MODS))
 MODULE_LINKER_SCRIPT:=$(LINKER_SRC_DIR)/module.ld
 
-## ramdisk ##
-RAMDISK_SRC_OBJS:=$(KERNEL_MOD_BUILD_DIR)/ata.ko
-RAMDISK_OBJS:=$(notdir $(RAMDISK_SRC_OBJS))
-RAMDISK_OBJS:=$(patsubst %,$(RAMDISK_BUILD_DIR)/%,$(RAMDISK_OBJS))
+## initrd ##
+INITRD_SRC_OBJS:=$(KERNEL_MOD_BUILD_DIR)/ata.ko
+INITRD_OBJS:=$(notdir $(INITRD_SRC_OBJS))
+INITRD_OBJS:=$(patsubst %,$(INITRD_BUILD_DIR)/%,$(INITRD_OBJS))
 
 #### lib ####
 # todo: shared libraries
@@ -125,7 +125,7 @@ $(BOOT_BUILD_DIR):
 
 $(BOOT_BINS): | $(BIN_DIR)
 $(BIN_DIR)/beans.img: | $(BIN_DIR)
-$(BIN_DIR)/ramdisk.img: | $(BIN_DIR)
+$(BIN_DIR)/initrd.img: | $(BIN_DIR)
 $(BIN_DIR):
 	mkdir -p $@
 
@@ -152,8 +152,8 @@ $(LIBC_OBJS): | $(LIBC_BUILD_DIR)
 $(LIBC_BUILD_DIR):
 	mkdir -p $@
 
-ramdisk_files: | $(RAMDISK_BUILD_DIR)
-$(RAMDISK_BUILD_DIR):
+initrd_files: | $(INITRD_BUILD_DIR)
+$(INITRD_BUILD_DIR):
 	mkdir -p $@
 
 $(HOST_BINS): | $(HOST_BUILD_DIR)
@@ -206,14 +206,14 @@ $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 $(BOOT_BUILD_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -o $@ $^
 
-.PHONY: ramdisk_files
-ramdisk_files: $(RAMDISK_SRC_OBJS)
-	for f in $(RAMDISK_SRC_OBJS); do cp -f $$f $(RAMDISK_BUILD_DIR); done
+.PHONY: initrd_files
+initrd_files: $(INITRD_SRC_OBJS)
+	for f in $(INITRD_SRC_OBJS); do cp -f $$f $(INITRD_BUILD_DIR); done
 
-$(BIN_DIR)/ramdisk.img: $(HOST_BUILD_DIR)/mkramdisk ramdisk_files
-	$(HOST_BUILD_DIR)/mkramdisk $(BIN_DIR)/ramdisk.img $(RAMDISK_BUILD_DIR)
+$(BIN_DIR)/initrd.img: $(HOST_BUILD_DIR)/mkinitrd initrd_files
+	$(HOST_BUILD_DIR)/mkinitrd $(BIN_DIR)/initrd.img $(INITRD_BUILD_DIR)
 
-$(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
+$(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/initrd.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
 	$(HOST_SCRIPTS_DIR)/mkimg $(BIN_DIR) $(SYSROOT_SRC_DIR)
 
 # todo: make this cross compatible

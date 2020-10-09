@@ -1,4 +1,4 @@
-// loads /boot/loadk, /boot/kernel, /boot/ramdisk
+// loads /boot/loadk, /boot/kernel, /boot/initrd
 // into memory starting at $0x8400 (in that order)
 // clobbery :'-)
 // org 0x8200 (from linker script)
@@ -42,7 +42,7 @@ find_boot_dir_loop:
   jne find_boot_dir_loop
   call load_cluster_from_dirent
 
-  // find each of loadk, kernel and ramdisk
+  // find each of loadk, kernel and initrd
   mov $3, %dl
   mov (dap_dest_addr_offset), %si
 check_loadk:
@@ -57,17 +57,17 @@ check_kernel:
   mov $kernel_file, %di
   mov $kernel_file_strlen, %cl
   call cmpstr
-  jne check_ramdisk
+  jne check_initrd
   call get_cluster_info
   mov %ax, (kernel_cluster)
   jmp maybe_check_next
-check_ramdisk:
-  mov $ramdisk_file, %di
-  mov $ramdisk_file_strlen, %cl
+check_initrd:
+  mov $initrd_file, %di
+  mov $initrd_file_strlen, %cl
   call cmpstr
   jne check_next
   call get_cluster_info
-  mov %ax, (ramdisk_cluster)
+  mov %ax, (initrd_cluster)
   jmp maybe_check_next
 
 // out
@@ -105,10 +105,10 @@ load_kernel:
   mov %ax, (kernel_start)
   mov (kernel_cluster), %ax
   call load_file_cluster
-load_ramdisk:
+load_initrd:
   mov (dap_dest_addr_offset), %ax
-  mov %ax, (ramdisk_start)
-  mov (ramdisk_cluster), %ax
+  mov %ax, (initrd_start)
+  mov (initrd_cluster), %ax
   call load_file_cluster
 
   // protected mode
@@ -124,7 +124,7 @@ load_ramdisk:
   mov %ax, %gs
   mov %ax, %ss
 
-  pushl (ramdisk_start)
+  pushl (initrd_start)
   pushl (kernel_start)
   pushl $mmap_start
   xor %eax, %eax
@@ -242,9 +242,9 @@ kernel_cluster:
 kernel_start:
   .word 0
   .word 0
-ramdisk_cluster:
+initrd_cluster:
   .word 0
-ramdisk_start:
+initrd_start:
   .word 0
   .word 0
 boot_dir: .ascii "BOOT"
@@ -254,8 +254,8 @@ loadk_file: .ascii "LOADK"
 // todo: maybe get this from a config instead
 kernel_file: .ascii "BEANS"
 .equ kernel_file_strlen, .-kernel_file
-ramdisk_file: .ascii "RAMDISK"
-.equ ramdisk_file_strlen, .-ramdisk_file
+initrd_file: .ascii "INITRD"
+.equ initrd_file_strlen, .-initrd_file
 .equ mmap_start, 0x500
 .equ fat_start, 0x8400
 .equ loadk_start, 0x8600

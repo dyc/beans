@@ -11,7 +11,7 @@ IMAGE=${OUT}/beans.img
 MNT=${OUT}/mnt
 LOADK=${OUT}/loadk
 KERNEL=${OUT}/beans
-INITRD=${OUT}/ramdisk.img
+INITRD=${OUT}/initrd.img
 # 80mb of 512b blocks
 SECTORS=163840
 BLOCKSIZE=512
