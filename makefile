@@ -14,6 +14,7 @@ KERNEL_BUILD_DIR:=$(BUILD_DIR)/kernel
 KERNEL_ASM_BUILD_DIR:=$(KERNEL_BUILD_DIR)/asm
 KERNEL_LIB_BUILD_DIR:=$(KERNEL_BUILD_DIR)/lib
 KERNEL_MOD_BUILD_DIR:=$(KERNEL_BUILD_DIR)/modules
+KERNEL_MISC_BUILD_DIRS:=$(KERNEL_BUILD_DIR)/fs
 LIB_BUILD_DIR:=$(BUILD_DIR)/lib
 LIBC_BUILD_DIR:=$(BUILD_DIR)/libc
 SYMBOLS_BUILD_DIR:=$(BUILD_DIR)/sym
@@ -53,10 +54,12 @@ CRTBEGIN_OBJ:=$(shell $(CC) $(KCFLAGS) -print-file-name=crtbegin.o)
 CRTEND_OBJ:=$(shell $(CC) $(KCFLAGS) -print-file-name=crtend.o)
 # c sources
 KERNEL_OBJS:=$(patsubst %.c,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.c))
+KERNEL_OBJS+=$(patsubst %.c,%.o,$(wildcard $(KERNEL_SRC_DIR)/*/*.c))
 # asm sources
 KERNEL_OBJS+=$(patsubst %.S,%.o,$(wildcard $(KERNEL_SRC_DIR)/*.S))
 KERNEL_OBJS+=$(patsubst %.S,%.o,$(wildcard $(KERNEL_SRC_DIR)/*/*.S))
-# build modules separately
+# build lib and modules separately
+KERNEL_OBJS:=$(filter-out $(wildcard $(LIB_SRC_DIR/*.c)), $(KERNEL_OBJS))
 KERNEL_OBJS:=$(filter-out $(wildcard $(KERNEL_MOD_SRC_DIR/*.c)), $(KERNEL_OBJS))
 KERNEL_OBJS:=$(filter-out $(wildcard $(KERNEL_MOD_SRC_DIR/*.S)), $(KERNEL_OBJS))
 # source path -> build path
@@ -129,11 +132,13 @@ $(BIN_DIR)/initrd.img: | $(BIN_DIR)
 $(BIN_DIR):
 	mkdir -p $@
 
-$(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNEL_ASM_BUILD_DIR)
+$(KERNEL_OBJS): | $(KERNEL_BUIlD_DIR) $(KERNEL_ASM_BUILD_DIR) $(KERNEL_MISC_BUILD_DIRS)
 $(KERNEL_BUILD_DIR):
 	mkdir -p $@
 $(KERNEL_ASM_BUILD_DIR):
 	mkdir -p $@
+$(KERNEL_MISC_BUILD_DIRS):
+	$(foreach d, $(KERNEL_MISC_BUILD_DIRS), mkdir -p $(d);)
 
 $(KERNEL_LIB_OBJS): | $(KERNEL_LIB_BUILD_DIR)
 $(KERNEL_LIB_BUILD_DIR):

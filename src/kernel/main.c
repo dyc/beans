@@ -1,4 +1,5 @@
 // #include <kernel/desc.h>
+#include <kernel/fs.h>
 #include <kernel/libc.h>
 #include <kernel/multiboot2.h>
 #include <kernel/printf.h>
@@ -24,6 +25,8 @@ static char buf[256] = {0};
 //   }
 // }
 
+struct fnode *mount_initrd(uintptr_t initrd);
+
 void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   serial_enable(SERIAL_PORT_COM1);
   PRINTF("serial enabled\n");
@@ -48,7 +51,7 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
       if (!strcmp(module->string, "initrd")) {
         PRINTF("mounting initrd located at %x...\n", module->start,
                module->string);
-        // todo: ^
+        mount_initrd(module->start);
       }
       break;
     }
