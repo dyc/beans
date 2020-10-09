@@ -210,9 +210,7 @@ $(BOOT_BUILD_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 ramdisk_files: $(RAMDISK_SRC_OBJS)
 	for f in $(RAMDISK_SRC_OBJS); do cp -f $$f $(RAMDISK_BUILD_DIR); done
 
-# todo: actually make this
 $(BIN_DIR)/ramdisk.img: $(HOST_BUILD_DIR)/mkramdisk ramdisk_files
-	echo "otherwise this file will have cluster number 0" > $@
 	$(HOST_BUILD_DIR)/mkramdisk $(BIN_DIR)/ramdisk.img $(RAMDISK_BUILD_DIR)
 
 $(BIN_DIR)/beans.img: $(BOOT_BINS) $(BIN_DIR)/beans $(BIN_DIR)/ramdisk.img $(KERNEL_MODS) $(SYSROOT_SRC_DIR)
