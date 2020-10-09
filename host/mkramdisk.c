@@ -19,6 +19,22 @@ struct rd_entry {
   // name goes here
 } __attribute__((packed));
 
+// creates a ramdisk image containing n files as a linkedlist:
+//    |    rd_prologue.magic      |
+//    |    rd_entry[0].start      |
+//    |    rd_entry[0].next       |
+//    |    rd_entry[0].name       |
+//    |           ...             |
+//    | first byte of rd_entry[0] |
+//    |           ...             |
+//    | last byte of rd_entry[0]  |
+//    |    rd_entry[1].start      |
+//    |    rd_entry[1].next       |
+//    |    rd_entry[1].name       |
+//    |           ...             |
+//    |   rd_entry[n].start = 0   |
+//    |   rd_entry[n].next = 0    |
+
 int main(int argc, char *argv[]) {
   if (argc != 3) {
     printf("usage: /path/to/output /path/to/ramdisk/root\n");
@@ -71,6 +87,9 @@ int main(int argc, char *argv[]) {
     fwrite(f_ptr, sizeof(uint8_t), f_size, out);
     fclose(f);
   }
+  current_entry.start = 0;
+  current_entry.next = 0;
+  fwrite(&current_entry, sizeof(struct rd_entry), 1, out);
 
   closedir(in);
   fclose(out);
