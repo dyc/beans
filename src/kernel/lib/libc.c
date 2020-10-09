@@ -25,3 +25,21 @@ size_t strlen(const char *s) {
   }
   return len;
 }
+
+int strcmp(const char *s1, const char *s2) {
+  unsigned char *p1 = (unsigned char *)s1;
+  unsigned char *p2 = (unsigned char *)s2;
+  while (1) {
+    unsigned char c1 = *(p1++);
+    unsigned char c2 = *(p2++);
+    if (c1 == 0 && c2 == 0) {
+      return 0;
+    } else if (c1 == c2) {
+      continue;
+    } else if (c1 < c2) {
+      return -1;
+    } else {
+      return 1;
+    }
+  }
+}

@@ -42,10 +42,23 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
        tag = (struct mb2_tag *)(((uint8_t *)tag) + tag->size)) {
     PRINTF("tag type %d\n", tag->type);
     switch (tag->type) {
+    case MB2_TAG_TYPE_MODULE: {
+      struct mb2_module *module = (struct mb2_module *)tag;
+      PRINTF("found module with string %s\n", module->string);
+      if (!strcmp(module->string, "initrd")) {
+        PRINTF("mounting initrd...\n", module->string);
+        // todo: ^
+      }
+      break;
+    }
     case MB2_TAG_TYPE_MEM_INFO: {
+      struct mb2_meminfo *mem_info = (struct mb2_meminfo *)tag;
+      (void)mem_info;
       break;
     }
     case MB2_TAG_TYPE_MMAP: {
+      struct mb2_mmap *mmap = (struct mb2_mmap *)tag;
+      (void)mmap;
       break;
     }
     }

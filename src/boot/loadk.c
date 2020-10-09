@@ -65,9 +65,9 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
                                                    struct smap_entry *smap,
                                                    uint32_t *kernel,
                                                    uint32_t *initrd) {
-  (void)initrd;
   serial_enable();
 
+  // ---- mb2 prologue, mmap, and meminfo --------
   size_t mmap_size = sizeof(struct mb2_mmap_entry) * smaps;
   // pad so that mb2_addr is 8 byte aligned
   mmap_size += (mmap_size % 8);
@@ -116,6 +116,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   PRINTF("boot_info.mem: lower %x upper %x\n", mem_info->mem_lower,
          mem_info->mem_upper);
 
+  // ---- load kernel --------
   struct elf_header *kernel_elf = (struct elf_header *)kernel;
   if (ELF_IDENT_MAGIC0 != kernel_elf->ident[0] ||
       ELF_IDENT_MAGIC1 != kernel_elf->ident[1] ||
@@ -160,6 +161,19 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
     }
   }
 
+  // ---- mb2 modules --------
+  struct mb2_module *initrd_mod = (struct mb2_module *)mb2_end;
+  initrd_mod->tag.type = MB2_TAG_TYPE_MODULE;
+  initrd_mod->start = (uint32_t)initrd;
+  // kernel takes initrd as a linkedlist, so don't need to know its size
+  initrd_mod->end = 0;
+  sprintf(initrd_mod->string, "initrd");
+  // include initrd_mod->string and its null byte
+  initrd_mod->tag.size =
+      sizeof(struct mb2_module) + strlen(initrd_mod->string) + 1;
+  mb2_end = (uintptr_t)((uint8_t *)mb2_end + initrd_mod->tag.size);
+
+  // ---- mb2 sentinel --------
   struct mb2_tag *sentinel = (struct mb2_tag *)mb2_end;
   sentinel->type = MB2_TAG_TYPE_END;
   sentinel->size = sizeof(struct mb2_tag);

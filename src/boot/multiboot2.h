@@ -5,6 +5,7 @@
 
 const uint32_t MB2_BOOTLOADER_MAGIC = 0x36d76289;
 const uint32_t MB2_TAG_TYPE_END = 0;
+const uint32_t MB2_TAG_TYPE_MODULE = 3;
 const uint32_t MB2_TAG_TYPE_MEM_INFO = 4;
 const uint32_t MB2_TAG_TYPE_MMAP = 6;
 
@@ -42,6 +43,13 @@ struct mb2_mem_info {
   struct mb2_tag tag;
   uint32_t mem_lower;
   uint32_t mem_upper;
+} __attribute__((packed));
+
+struct mb2_module {
+  struct mb2_tag tag;
+  uint32_t start;
+  uint32_t end;
+  char string[0];
 } __attribute__((packed));
 
 #endif
