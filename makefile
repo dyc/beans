@@ -124,6 +124,8 @@ $(BOOT_BUILD_DIR):
 	mkdir -p $@
 
 $(BOOT_BINS): | $(BIN_DIR)
+$(BIN_DIR)/beans.img: | $(BIN_DIR)
+$(BIN_DIR)/ramdisk.img: | $(BIN_DIR)
 $(BIN_DIR):
 	mkdir -p $@
 
@@ -150,7 +152,7 @@ $(LIBC_OBJS): | $(LIBC_BUILD_DIR)
 $(LIBC_BUILD_DIR):
 	mkdir -p $@
 
-ramdisk: | $(RAMDISK_BUILD_DIR)
+ramdisk_files: | $(RAMDISK_BUILD_DIR)
 $(RAMDISK_BUILD_DIR):
 	mkdir -p $@
 
@@ -204,12 +206,12 @@ $(BIN_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 $(BOOT_BUILD_DIR)/%: $(BOOT_BUILD_DIR)/%.o
 	$(LD) -o $@ $^
 
-.PHONY: ramdisk
-ramdisk: $(RAMDISK_SRC_OBJS)
+.PHONY: ramdisk_files
+ramdisk_files: $(RAMDISK_SRC_OBJS)
 	for f in $(RAMDISK_SRC_OBJS); do cp -f $$f $(RAMDISK_BUILD_DIR); done
 
 # todo: actually make this
-$(BIN_DIR)/ramdisk.img: $(HOST_BUILD_DIR)/mkramdisk ramdisk
+$(BIN_DIR)/ramdisk.img: $(HOST_BUILD_DIR)/mkramdisk ramdisk_files
 	echo "otherwise this file will have cluster number 0" > $@
 	$(HOST_BUILD_DIR)/mkramdisk $(BIN_DIR)/ramdisk.img $(RAMDISK_BUILD_DIR)
 
