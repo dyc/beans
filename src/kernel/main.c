@@ -1,12 +1,13 @@
-// #include <kernel/desc.h>
+#include <kernel/desc.h>
 #include <kernel/fs.h>
 #include <kernel/libc.h>
+#include <kernel/mem.h>
 #include <kernel/multiboot2.h>
 #include <kernel/printf.h>
 #include <kernel/serial.h>
-// #include <kernel/vga.h>
-// #include <sys/device.h>
-// #include <sys/kbd.h>
+#include <kernel/vga.h>
+#include <sys/device.h>
+#include <sys/kbd.h>
 
 #define PRINTF(fmt, ...)                                                       \
   {                                                                            \
@@ -17,13 +18,13 @@
   };
 
 static char buf[256] = {0};
-// void timer_heartbeat(unsigned long t) {
-//   // heartbeat every 10 seconds
-//   if (t % 1000 == 0) {
-//     sprintf(buf, "%ds since boot\n", t / 100);
-//     serial_write(SERIAL_PORT_COM1, buf);
-//   }
-// }
+void timer_heartbeat(unsigned long t) {
+  // heartbeat every 10 seconds
+  if (t % 1000 == 0) {
+    sprintf(buf, "%ds since boot\n", t / 100);
+    serial_write(SERIAL_PORT_COM1, buf);
+  }
+}
 
 struct fnode *mount_initrd(uintptr_t initrd);
 
@@ -31,6 +32,16 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   serial_enable(SERIAL_PORT_COM1);
   PRINTF("serial enabled\n");
   PRINTF("mb2 %x (mb2 & 0x7 = %d)\n", (uint32_t)mb2, ((uint32_t)mb2 & 0x7));
+
+  gdt_install();
+  serial_write(SERIAL_PORT_COM1, "gdt ready\n");
+  idt_install();
+  serial_write(SERIAL_PORT_COM1, "idt ready\n");
+  // todo: pmm? vmm? heap?
+  // paging_init();
+  // serial_write(SERIAL_PORT_COM1, "paging ready\n");
+  // heap_init();
+  // serial_write(SERIAL_PORT_COM1, "heap ready\n");
 
   if (MB2_BOOTLOADER_MAGIC != mb2_magic) {
     return;
@@ -67,32 +78,18 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     }
     }
   }
+  serial_write(SERIAL_PORT_COM1, "modules ready\n");
 
-  // gdt_install();
-  // idt_install();
-  // irq_install();
-  // serial_write(SERIAL_PORT_COM1, "gdt, idt, irq ready\n");
+  irq_install();
+  serial_write(SERIAL_PORT_COM1, "irq ready\n");
 
-  // pit_install();
-  // pit_set_freq_hz(100);
-  // pit_set_timer_cb(timer_heartbeat);
-  // serial_write(SERIAL_PORT_COM1, "pit ready\n");
+  pit_install();
+  pit_set_freq_hz(100);
+  pit_set_timer_cb(timer_heartbeat);
+  serial_write(SERIAL_PORT_COM1, "pit ready\n");
 
-  // keyboard_install();
-  // serial_write(SERIAL_PORT_COM1, "kbd ready\n");
-
-  // if (mb_info->flags & MULTIBOOT_INFO_MODS) {
-  //   sprintf(buf, "found %d modules\n", mb_info->mods_count);
-  //   serial_write(SERIAL_PORT_COM1, buf);
-  //   for (size_t i = 0; i < mb_info->mods_count; ++i) {
-  //     sprintf(buf, "mod @ %d\n", mb_info->mods_addr);
-  //     serial_write(SERIAL_PORT_COM1, buf);
-  //     struct multiboot_module *mod =
-  //         (struct multiboot_module *)mb_info->mods_addr;
-  //     ((void (*)(void))mod->mod_start)();
-  //   }
-  // }
-  // serial_write(SERIAL_PORT_COM1, "finished loading modules\n");
+  keyboard_install();
+  serial_write(SERIAL_PORT_COM1, "kbd ready\n");
 
   // size_t kbdc = 0;
   // char kbdbuf[8] = {0};

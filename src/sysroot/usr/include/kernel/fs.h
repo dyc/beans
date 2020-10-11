@@ -5,6 +5,7 @@
 
 struct fnode {
   char name[64];
+  uint32_t inode;
   uint32_t size;
 } __attribute__((packed));
 

@@ -19,7 +19,7 @@ struct rd_entry {
   // name goes here
 } __attribute__((packed));
 
-// creates a ramdisk image containing n files as a linkedlist:
+// creates an initrd image containing n files as a linkedlist:
 //    |    rd_prologue.magic      |
 //    |    rd_entry[0].start      |
 //    |    rd_entry[0].next       |
@@ -37,7 +37,7 @@ struct rd_entry {
 
 int main(int argc, char *argv[]) {
   if (argc != 3) {
-    printf("usage: /path/to/output /path/to/ramdisk/root\n");
+    printf("usage: /path/to/output /path/to/initrd/root\n");
     exit(EXIT_FAILURE);
   }
 
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  printf("creating ramdisk %s from path %s\n", argv[1], argv[2]);
+  printf("creating initrd %s from path %s\n", argv[1], argv[2]);
   struct rd_prologue prologue = {.magic = 0xfeedbeeb};
   fwrite(&prologue, sizeof(struct rd_prologue), 1, out);
 
