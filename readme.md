@@ -1,3 +1,9 @@
+a from-the-bootloader x86 os to try out some ideas in systems theory but mostly
+to tide me over this running injury. already did breads n plants n wanted to get
+in early on the next big quarantine hobby :'-)
+
+----
+
 i'm running macos 10.14.6, with gcc 4.2.1. before setting up our cross
 toolchain, let's grab latest gcc (10.2.0):
 
