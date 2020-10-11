@@ -67,6 +67,8 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
                                                    uint32_t *initrd) {
   serial_enable();
 
+  // todo: fix tags, which actually enclose data sections as well. size should
+  // reflect this. will need to update tag loop in kmain
   // ---- mb2 prologue, mmap, and meminfo --------
   size_t mmap_size = sizeof(struct mb2_mmap_entry) * smaps;
   // pad so that mb2_addr is 8 byte aligned

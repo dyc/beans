@@ -28,6 +28,10 @@ void timer_heartbeat(unsigned long t) {
 
 struct fnode *mount_initrd(uintptr_t initrd);
 
+struct mb2_module *ramdisk_module;
+struct mb2_meminfo *mem_info;
+struct mb2_mmap *mmap;
+
 void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   serial_enable(SERIAL_PORT_COM1);
   PRINTF("serial enabled\n");
@@ -37,11 +41,6 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   serial_write(SERIAL_PORT_COM1, "gdt ready\n");
   idt_install();
   serial_write(SERIAL_PORT_COM1, "idt ready\n");
-  // todo: pmm? vmm? heap?
-  // paging_init();
-  // serial_write(SERIAL_PORT_COM1, "paging ready\n");
-  // heap_init();
-  // serial_write(SERIAL_PORT_COM1, "heap ready\n");
 
   if (MB2_BOOTLOADER_MAGIC != mb2_magic) {
     return;
@@ -51,6 +50,7 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     return;
   }
 
+  // collect requisite mb2 tags
   for (struct mb2_tag *tag = (struct mb2_tag *)(((uint8_t *)mb2) + 8);
        MB2_TAG_TYPE_END != tag->type;
        tag = (struct mb2_tag *)(((uint8_t *)tag) + tag->size)) {
@@ -60,25 +60,32 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
       struct mb2_module *module = (struct mb2_module *)tag;
       PRINTF("found module with string %s\n", module->string);
       if (!strcmp(module->string, "initrd")) {
-        PRINTF("mounting initrd located at %x...\n", module->start,
-               module->string);
-        mount_initrd(module->start);
+        ramdisk_module = module;
       }
       break;
     }
     case MB2_TAG_TYPE_MEM_INFO: {
-      struct mb2_meminfo *mem_info = (struct mb2_meminfo *)tag;
+      mem_info = (struct mb2_meminfo *)tag;
       (void)mem_info;
       break;
     }
     case MB2_TAG_TYPE_MMAP: {
-      struct mb2_mmap *mmap = (struct mb2_mmap *)tag;
-      (void)mmap;
+      mmap = (struct mb2_mmap *)tag;
+
       break;
     }
     }
   }
-  serial_write(SERIAL_PORT_COM1, "modules ready\n");
+  serial_write(SERIAL_PORT_COM1, "collected mb2 info\n");
+
+  // todo: pmm? vmm? heap?
+  // paging_init();
+  // serial_write(SERIAL_PORT_COM1, "paging ready\n");
+  // heap_init();
+  // serial_write(SERIAL_PORT_COM1, "heap ready\n");
+
+  PRINTF("mounting initrd located at %x...\n", ramdisk_module->start)
+  mount_initrd(ramdisk_module->start);
 
   irq_install();
   serial_write(SERIAL_PORT_COM1, "irq ready\n");
