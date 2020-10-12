@@ -18,7 +18,7 @@
   };
 
 static char buf[256] = {0};
-static struct mb2_module *ramdisk_module = NULL;
+static struct mb2_module *initrd_module = NULL;
 static struct mb2_mem_info *mem_info = NULL;
 static struct mb2_mmap *mmap = NULL;
 
@@ -65,7 +65,7 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
       struct mb2_module *module = (struct mb2_module *)tag;
       PRINTF("found module with string %s\n", module->string)
       if (!strcmp(module->string, "initrd")) {
-        ramdisk_module = module;
+        initrd_module = module;
       }
       break;
     }
@@ -86,6 +86,11 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     return;
   }
   paging_init(mem_info->mem_lower + mem_info->mem_upper);
+
+  if (NULL == mmap) {
+    PRINTF("didn't find mmap tag!\n")
+    return;
+  }
   for (struct mb2_mmap_entry *entry = mmap->entries;
        (uintptr_t)entry < (uintptr_t)((uint8_t *)mmap + mmap->tag.size);
        ++entry) {
@@ -103,8 +108,12 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   heap_init();
   PRINTF("heap ready\n")
 
-  PRINTF("mounting initrd located at %x...\n", ramdisk_module->start)
-  mount_initrd(ramdisk_module->start);
+  if (NULL == initrd_module) {
+    PRINTF("didn't find initrd_module!\n")
+    return;
+  }
+  PRINTF("mounting initrd located at %x...\n", initrd_module->start)
+  mount_initrd(initrd_module->start);
 
   irq_install();
   PRINTF("irq ready\n")
