@@ -15,11 +15,9 @@
     serial_write(buf);                                                         \
   };
 
-// todo: change this back to 1mb once we have higher half kernel
-static const uint32_t KERNEL_START_PHYS = 0x200000;
+// 8 byte aligned home for mb2 info
+static struct mb2_prologue *prologue = (struct mb2_prologue *)0x200000;
 static char buf[256] = {0};
-static uint32_t kentry = 0;
-static uintptr_t mb2_addr = 0;
 
 static void error() {
   PRINTF(":-(");
@@ -27,7 +25,7 @@ static void error() {
     ;
 }
 
-static void woohoo() {
+static void woohoo(uint32_t kentry) {
   serial_write("                                 \n");
   serial_write("  ________________               \n");
   serial_write(" /  ____ < ow >   \\             \n");
@@ -51,14 +49,14 @@ static void woohoo() {
   serial_write("                 ||     ||       \n");
   serial_write(" =============================== \n");
   serial_write("                                 \n");
-  PRINTF("mb2 %x\n", (uint32_t)mb2_addr);
+  PRINTF("mb2 %x\n", (uint32_t)prologue);
 
   asm volatile("mov %0, %%eax\n"
                "mov %1, %%ebx\n"
                "pushl %%eax\n"
                "pushl %%ebx\n"
                "jmp *%2\n" ::"i"(MB2_BOOTLOADER_MAGIC),
-               "g"((uint32_t)mb2_addr), "g"(kentry));
+               "g"((uint32_t)prologue), "g"(kentry));
 }
 
 __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
@@ -66,57 +64,6 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
                                                    uint32_t *kernel,
                                                    uint32_t *initrd) {
   serial_enable();
-
-  // todo: fix tags, which actually enclose data sections as well. size should
-  // reflect this. will need to update tag loop in kmain
-  // ---- mb2 prologue, mmap, and meminfo --------
-  size_t mmap_size = sizeof(struct mb2_mmap_entry) * smaps;
-  // pad so that mb2_addr is 8 byte aligned
-  mmap_size += (mmap_size % 8);
-  PRINTF("allocating %d bytes for %d mb2 mmap entries at %x\n",
-         (uint32_t)mmap_size, (uint32_t)smaps, KERNEL_START_PHYS);
-  memset((void *)KERNEL_START_PHYS, 0, mmap_size);
-
-  mb2_addr = KERNEL_START_PHYS + mmap_size;
-  PRINTF("starting mb2 after mmap entries at %x\n", (uint32_t)mb2_addr);
-  uintptr_t mb2_end = mb2_addr;
-
-  struct mb2_prologue *prologue = (struct mb2_prologue *)mb2_addr;
-  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(struct mb2_prologue));
-
-  struct mb2_mem_info *mem_info = (struct mb2_mem_info *)mb2_end;
-  mem_info->tag.type = MB2_TAG_TYPE_MEM_INFO;
-  mem_info->tag.size = sizeof(struct mb2_mem_info);
-  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(struct mb2_mem_info));
-
-  struct mb2_mmap_entry *mmap_entry =
-      (struct mb2_mmap_entry *)KERNEL_START_PHYS;
-  struct mb2_mmap *mmap = (struct mb2_mmap *)mb2_end;
-  mmap->tag.type = MB2_TAG_TYPE_MMAP;
-  mmap->tag.size = sizeof(struct mb2_mmap);
-  mmap->entry_size = sizeof(struct mb2_mmap_entry);
-  mmap->entries = mmap_entry;
-  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(struct mb2_mmap));
-  for (size_t i = 0; i < smaps; ++i) {
-    struct smap_entry s = smap[i];
-    PRINTF("smap[%ld] base %lx size %lx type %d\n", i, (long)s.base,
-           (long)s.size, s.type);
-    if (0 == s.base) {
-      mem_info->mem_lower = s.size;
-    }
-    if (0x100000 <= s.base && SMAP_TYPE_RAM == s.type) {
-      mem_info->mem_upper += s.size;
-    }
-
-    mmap_entry->base = s.base;
-    mmap_entry->size = s.size;
-    mmap_entry->type = s.type;
-    PRINTF("mmap[%x] base %lx size %lx type %d\n", (uint32_t)mmap_entry,
-           (long)mmap_entry->base, (long)mmap_entry->size, mmap_entry->type);
-    ++mmap_entry;
-  }
-  PRINTF("boot_info.mem: lower %x upper %x\n", mem_info->mem_lower,
-         mem_info->mem_upper);
 
   // ---- load kernel --------
   struct elf_header *kernel_elf = (struct elf_header *)kernel;
@@ -139,7 +86,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
     error();
   }
 
-  kentry = kernel_elf->entry;
+  const uint32_t kentry = kernel_elf->entry;
   PRINTF("kentry %x\n", kentry)
 
   uint8_t *pheader_base = ((uint8_t *)kernel) + kernel_elf->ph_offset_bytes;
@@ -163,6 +110,45 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
     }
   }
 
+  uint32_t mb2_end =
+      (uint32_t)((uint8_t *)prologue + sizeof(struct mb2_prologue));
+  // ---- mb2 meminfo --------
+  struct mb2_mem_info *mem_info = (struct mb2_mem_info *)mb2_end;
+  mem_info->tag.type = MB2_TAG_TYPE_MEM_INFO;
+  mem_info->tag.size = sizeof(struct mb2_mem_info);
+  mb2_end += (uint32_t)((uint8_t *)mb2_end + sizeof(struct mb2_mem_info));
+
+  // ---- mb2 mmap --------
+  struct mb2_mmap *mmap = (struct mb2_mmap *)mb2_end;
+  mmap->tag.type = MB2_TAG_TYPE_MMAP;
+  mmap->tag.size =
+      sizeof(struct mb2_mmap) + sizeof(struct mb2_mmap_entry) * smaps;
+  mmap->entry_size = sizeof(struct mb2_mmap_entry);
+  mmap->entries =
+      (struct mb2_mmap_entry *)((uint8_t *)mb2_end + sizeof(struct mb2_mmap));
+  struct mb2_mmap_entry *mmap_entry = (struct mb2_mmap_entry *)mmap->entries;
+  for (size_t i = 0; i < smaps; ++i) {
+    struct smap_entry s = smap[i];
+    PRINTF("smap[%ld] base %lx size %lx type %d\n", i, (long)s.base,
+           (long)s.size, s.type);
+    if (0 == s.base) {
+      mem_info->mem_lower = s.size;
+    }
+    if (0x100000 <= s.base && SMAP_TYPE_RAM == s.type) {
+      mem_info->mem_upper += s.size;
+    }
+
+    mmap_entry->base = s.base;
+    mmap_entry->size = s.size;
+    mmap_entry->type = s.type;
+    PRINTF("mmap[%x] base %lx size %lx type %d\n", (uint32_t)mmap_entry,
+           (long)mmap_entry->base, (long)mmap_entry->size, mmap_entry->type);
+    ++mmap_entry;
+  }
+  PRINTF("boot_info.mem: lower %x upper %x\n", mem_info->mem_lower,
+         mem_info->mem_upper);
+  mb2_end = (uint32_t)(++mmap_entry);
+
   // ---- mb2 modules --------
   struct mb2_module *initrd_mod = (struct mb2_module *)mb2_end;
   initrd_mod->tag.type = MB2_TAG_TYPE_MODULE;
@@ -173,15 +159,16 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   // include initrd_mod->string and its null byte
   initrd_mod->tag.size =
       sizeof(struct mb2_module) + strlen(initrd_mod->string) + 1;
-  mb2_end = (uintptr_t)((uint8_t *)mb2_end + initrd_mod->tag.size);
+  mb2_end = (uint32_t)((uint8_t *)mb2_end + initrd_mod->tag.size);
 
   // ---- mb2 sentinel --------
   struct mb2_tag *sentinel = (struct mb2_tag *)mb2_end;
   sentinel->type = MB2_TAG_TYPE_END;
   sentinel->size = sizeof(struct mb2_tag);
-  mb2_end = (uintptr_t)((uint8_t *)mb2_end + sizeof(struct mb2_tag));
+  mb2_end = (uint32_t)((uint8_t *)mb2_end + sizeof(struct mb2_tag));
 
-  prologue->size = (uint32_t)mb2_end - mb2_addr;
+  prologue->size = mb2_end - (uint32_t)prologue;
   PRINTF("final mb2 size %d bytes\n", prologue->size);
-  woohoo();
+
+  woohoo(kentry);
 }
