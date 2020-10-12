@@ -17,7 +17,7 @@
 
 #define ERROR                                                                  \
   {                                                                            \
-    PRINTF(":-(");                                                             \
+    PRINTF(":-(")                                                              \
     while (1)                                                                  \
       ;                                                                        \
   };
@@ -55,7 +55,7 @@ static void woohoo(uint32_t kentry) {
   serial_write("                 ||     ||       \n");
   serial_write(" =============================== \n");
   serial_write("                                 \n");
-  PRINTF("mb2 %x\n", (uint32_t)prologue);
+  PRINTF("mb2 %x\n", (uint32_t)prologue)
 
   asm volatile("mov %0, %%eax\n"
                "mov %1, %%ebx\n"
@@ -97,15 +97,15 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
 
   uint8_t *pheader_base = ((uint8_t *)kernel) + kernel_elf->ph_offset_bytes;
   PRINTF("reading %d pheaders starting at %x\n", kernel_elf->ph_ents,
-         (uint32_t)pheader_base);
+         (uint32_t)pheader_base)
   for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
     struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
                                   (i * kernel_elf->ph_ent_size_bytes);
     PRINTF("pheaders[%ld] type %d vaddr %lx memsize %x\n", i, pheader->type,
-           (long)pheader->virt_addr, pheader->memsize_bytes);
+           (long)pheader->virt_addr, pheader->memsize_bytes)
     if (ELF_PHTYPE_LOAD == pheader->type) {
       PRINTF("loading data seg (%d bytes) from elf offset %x to vaddr %x\n",
-             pheader->filesize_bytes, pheader->offset, pheader->virt_addr);
+             pheader->filesize_bytes, pheader->offset, pheader->virt_addr)
 
       memcpy((void *)pheader->virt_addr, (void *)kernel + pheader->offset,
              pheader->memsize_bytes);
@@ -134,8 +134,6 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   struct mb2_mmap_entry *mmap_entry = (struct mb2_mmap_entry *)mmap->entries;
   for (size_t i = 0; i < smaps; ++i) {
     struct smap_entry s = smap[i];
-    PRINTF("smap[%ld] base %lx size %lx type %d\n", i, (long)s.base,
-           (long)s.size, s.type);
     if (0 == s.base) {
       mem_info->mem_lower = s.size;
     }
@@ -146,12 +144,12 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
     mmap_entry->base = s.base;
     mmap_entry->size = s.size;
     mmap_entry->type = s.type;
-    PRINTF("mmap[%x] base %lx size %lx type %d\n", (uint32_t)mmap_entry,
-           (long)mmap_entry->base, (long)mmap_entry->size, mmap_entry->type);
+    PRINTF("mmap[%ld] base %lx size %lx type %d\n", i, (long)mmap_entry->base,
+           (long)mmap_entry->size, mmap_entry->type)
     ++mmap_entry;
   }
   PRINTF("boot_info.mem: lower %x upper %x\n", mem_info->mem_lower,
-         mem_info->mem_upper);
+         mem_info->mem_upper)
 
   // ---- mb2 modules --------
   struct mb2_module *initrd_mod = (struct mb2_module *)next_tag(&mmap->tag);
@@ -170,7 +168,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   sentinel->size = sizeof(struct mb2_tag);
 
   prologue->size = (uint32_t)next_tag(sentinel) - (uint32_t)prologue;
-  PRINTF("final mb2 size %d bytes\n", prologue->size);
+  PRINTF("final mb2 size %d bytes\n", prologue->size)
 
   woohoo(kentry);
 }
