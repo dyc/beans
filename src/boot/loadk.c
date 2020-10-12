@@ -15,14 +15,20 @@
     serial_write(buf);                                                         \
   };
 
+#define ERROR                                                                  \
+  {                                                                            \
+    PRINTF(":-(");                                                             \
+    while (1)                                                                  \
+      ;                                                                        \
+  };
+
 // 8 byte aligned home for mb2 info
 static struct mb2_prologue *prologue = (struct mb2_prologue *)0x200000;
 static char buf[256] = {0};
 
-static void error() {
-  PRINTF(":-(");
-  while (1)
-    ;
+static inline struct mb2_tag *next_tag(struct mb2_tag *tag) {
+  return (struct mb2_tag *)(((uint8_t *)tag + tag->size) +
+                            (uintptr_t)((uint8_t *)tag + tag->size) % 8);
 }
 
 static void woohoo(uint32_t kentry) {
@@ -71,19 +77,19 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
       ELF_IDENT_MAGIC1 != kernel_elf->ident[1] ||
       ELF_IDENT_MAGIC2 != kernel_elf->ident[2] ||
       ELF_IDENT_MAGIC3 != kernel_elf->ident[3]) {
-    error();
+    ERROR
   }
   if (ELF_IDENT_32BIT != kernel_elf->ident[4]) {
-    error();
+    ERROR
   }
   if (ELF_IDENT_L_ENDIAN != kernel_elf->ident[5]) {
-    error();
+    ERROR
   }
   if (ELF_TYPE_EXE != kernel_elf->type) {
-    error();
+    ERROR
   }
   if (ELF_ISA_X86 != kernel_elf->isa) {
-    error();
+    ERROR
   }
 
   const uint32_t kentry = kernel_elf->entry;
@@ -110,22 +116,21 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
     }
   }
 
-  uint32_t mb2_end =
-      (uint32_t)((uint8_t *)prologue + sizeof(struct mb2_prologue));
   // ---- mb2 meminfo --------
-  struct mb2_mem_info *mem_info = (struct mb2_mem_info *)mb2_end;
+  struct mb2_mem_info *mem_info =
+      (struct mb2_mem_info *)((uint8_t *)prologue +
+                              sizeof(struct mb2_prologue));
   mem_info->tag.type = MB2_TAG_TYPE_MEM_INFO;
   mem_info->tag.size = sizeof(struct mb2_mem_info);
-  mb2_end += (uint32_t)((uint8_t *)mb2_end + sizeof(struct mb2_mem_info));
 
   // ---- mb2 mmap --------
-  struct mb2_mmap *mmap = (struct mb2_mmap *)mb2_end;
+  struct mb2_mmap *mmap = (struct mb2_mmap *)next_tag(&mem_info->tag);
   mmap->tag.type = MB2_TAG_TYPE_MMAP;
   mmap->tag.size =
       sizeof(struct mb2_mmap) + sizeof(struct mb2_mmap_entry) * smaps;
   mmap->entry_size = sizeof(struct mb2_mmap_entry);
   mmap->entries =
-      (struct mb2_mmap_entry *)((uint8_t *)mb2_end + sizeof(struct mb2_mmap));
+      (struct mb2_mmap_entry *)((uint8_t *)mmap + sizeof(struct mb2_mmap));
   struct mb2_mmap_entry *mmap_entry = (struct mb2_mmap_entry *)mmap->entries;
   for (size_t i = 0; i < smaps; ++i) {
     struct smap_entry s = smap[i];
@@ -147,10 +152,9 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   }
   PRINTF("boot_info.mem: lower %x upper %x\n", mem_info->mem_lower,
          mem_info->mem_upper);
-  mb2_end = (uint32_t)(++mmap_entry);
 
   // ---- mb2 modules --------
-  struct mb2_module *initrd_mod = (struct mb2_module *)mb2_end;
+  struct mb2_module *initrd_mod = (struct mb2_module *)next_tag(&mmap->tag);
   initrd_mod->tag.type = MB2_TAG_TYPE_MODULE;
   initrd_mod->start = (uint32_t)initrd;
   // kernel takes initrd as a linkedlist, so don't need to know its size
@@ -159,15 +163,13 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   // include initrd_mod->string and its null byte
   initrd_mod->tag.size =
       sizeof(struct mb2_module) + strlen(initrd_mod->string) + 1;
-  mb2_end = (uint32_t)((uint8_t *)mb2_end + initrd_mod->tag.size);
 
   // ---- mb2 sentinel --------
-  struct mb2_tag *sentinel = (struct mb2_tag *)mb2_end;
+  struct mb2_tag *sentinel = (struct mb2_tag *)next_tag(&initrd_mod->tag);
   sentinel->type = MB2_TAG_TYPE_END;
   sentinel->size = sizeof(struct mb2_tag);
-  mb2_end = (uint32_t)((uint8_t *)mb2_end + sizeof(struct mb2_tag));
 
-  prologue->size = mb2_end - (uint32_t)prologue;
+  prologue->size = (uint32_t)next_tag(sentinel) - (uint32_t)prologue;
   PRINTF("final mb2 size %d bytes\n", prologue->size);
 
   woohoo(kentry);

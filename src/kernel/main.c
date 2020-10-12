@@ -32,6 +32,11 @@ struct mb2_module *ramdisk_module;
 struct mb2_meminfo *mem_info;
 struct mb2_mmap *mmap;
 
+static inline struct mb2_tag *next_tag(struct mb2_tag *tag) {
+  return (struct mb2_tag *)(((uint8_t *)tag + tag->size) +
+                            (uintptr_t)((uint8_t *)tag + tag->size) % 8);
+}
+
 void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   serial_enable(SERIAL_PORT_COM1);
   PRINTF("serial enabled\n");
@@ -51,9 +56,9 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   }
 
   // collect requisite mb2 tags
-  for (struct mb2_tag *tag = (struct mb2_tag *)(((uint8_t *)mb2) + 8);
-       MB2_TAG_TYPE_END != tag->type;
-       tag = (struct mb2_tag *)(((uint8_t *)tag) + tag->size)) {
+  for (struct mb2_tag *tag =
+           (struct mb2_tag *)((uint8_t *)mb2 + sizeof(struct mb2_prologue));
+       MB2_TAG_TYPE_END != tag->type; tag = next_tag(tag)) {
     PRINTF("tag type %d\n", tag->type);
     switch (tag->type) {
     case MB2_TAG_TYPE_MODULE: {
