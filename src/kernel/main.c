@@ -114,36 +114,20 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   pit_set_timer_cb(timer_heartbeat);
   PRINTF("pit ready\n")
 
+  vga_init();
+  vga_fg(VGA_COLOR_BLACK);
+  vga_bg(VGA_COLOR_WHITE);
+  PRINTF("vga ready\n")
+
   keyboard_install();
   PRINTF("kbd ready\n")
 
-  // size_t kbdc = 0;
-  // char kbdbuf[8] = {0};
-  // while (1) {
-  //   if (kbdc == KEYBOARD_CURSOR) {
-  //     asm volatile("nop");
-  //     continue;
-  //   }
-
-  //   size_t written = 0;
-  //   bool wrap = KEYBOARD_CURSOR < kbdc;
-  //   // write to end of buffer or to cursor, if wrap around
-  //   size_t n = wrap ? sizeof(KEYBOARD_BUFFER) : KEYBOARD_CURSOR;
-  //   for (size_t i = kbdc; i < n; ++i) {
-  //     kbdbuf[i - kbdc] = scancode(KEYBOARD_BUFFER[i]);
-  //   }
-  //   written = n - kbdc;
-  //   // handle wrap around
-  //   if (wrap) {
-  //     for (size_t i = 0; i < KEYBOARD_CURSOR; ++i) {
-  //       kbdbuf[written + i] = scancode(KEYBOARD_BUFFER[i]);
-  //     }
-  //     written += KEYBOARD_CURSOR;
-  //   }
-  //   kbdbuf[written] = 0;
-  //   // todo: change this back to vga_write(kbdbuf);
-  //   serial_write(SERIAL_PORT_COM1, kbdbuf);
-  //   // if we get interrupt here we may skip over some keys, that's ok
-  //   kbdc = KEYBOARD_CURSOR;
-  // }
+  memset(buf, 0, sizeof(buf) / sizeof(buf[0]));
+  while (1) {
+    for (size_t i = 0; i < KEYBOARD_CURSOR; ++i) {
+      buf[i] = scancode(KEYBOARD_BUFFER[i]);
+    }
+    KEYBOARD_CURSOR = 0;
+    vga_write(buf);
+  }
 }

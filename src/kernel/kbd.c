@@ -4,7 +4,7 @@
 #include <sys/device.h>
 #include <sys/io.h>
 
-char KEYBOARD_BUFFER[128];
+char KEYBOARD_BUFFER[8] = {0};
 size_t KEYBOARD_CURSOR = 0;
 
 static const uint8_t KEYBOARD_IRQ = 0x01;
@@ -12,12 +12,12 @@ static const uint8_t KEYBOARD_PORT = 0x60;
 static const uint8_t KEYBOARD_PENDING = 0x64;
 
 static int keyboard_handler(struct irq_state *s) {
-  IGNORE(s);
+  IGNORE(s)
 
   if (inb(KEYBOARD_PENDING) & 0x01) {
-    KEYBOARD_BUFFER[KEYBOARD_CURSOR++] = inb(KEYBOARD_PORT);
-    if (KEYBOARD_CURSOR >= sizeof(KEYBOARD_BUFFER)) {
-      KEYBOARD_CURSOR = 0;
+    char c = inb(KEYBOARD_PORT);
+    if (KEYBOARD_CURSOR < sizeof(KEYBOARD_BUFFER)) {
+      KEYBOARD_BUFFER[KEYBOARD_CURSOR++] = c;
     }
   }
   pic_ack(KEYBOARD_IRQ);

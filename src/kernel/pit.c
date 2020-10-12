@@ -20,7 +20,7 @@ static void (*on_timer)(unsigned long);
 void pit_set_timer_cb(void (*cb)(unsigned long)) { on_timer = cb; }
 
 static int pit_handler(struct irq_state *s) {
-  IGNORE(s);
+  IGNORE(s)
   ++t;
   if (on_timer) {
     on_timer(t);

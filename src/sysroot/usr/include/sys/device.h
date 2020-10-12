@@ -4,7 +4,7 @@
 #include <kernel/desc.h>
 
 // todo: temporary home for kbd output until we have a filesystem
-extern char KEYBOARD_BUFFER[128];
+extern char KEYBOARD_BUFFER[];
 extern size_t KEYBOARD_CURSOR;
 extern void keyboard_install();
 
