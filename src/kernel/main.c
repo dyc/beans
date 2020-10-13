@@ -27,8 +27,7 @@ struct fnode *mount_initrd(uintptr_t initrd);
 void timer_heartbeat(unsigned long t) {
   // heartbeat every 10 seconds
   if (t % 1000 == 0) {
-    sprintf(buf, "%ds since boot\n", t / 100);
-    serial_write(SERIAL_PORT_COM1, buf);
+    PRINTF("%ds since boot\n", t / 100)
   }
 }
 

@@ -77,6 +77,10 @@ static void pic_remap() {
   iowait();
   outb(pic_data(PIC2), old_p2);
   iowait();
+
+  // todo: yeah, interrupts causing issues somewhere
+  outb(pic_data(PIC1), 0xff);
+  outb(pic_data(PIC2), 0xff);
 }
 
 void c_irq_handler(struct irq_state *s) {

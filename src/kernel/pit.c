@@ -15,7 +15,7 @@ static const uint8_t CHANNEL0_LOHI_STROBE = 0x34;
 
 static size_t divisor = 0xFFFFFFFF;
 static unsigned long t = 0;
-static void (*on_timer)(unsigned long);
+static void (*on_timer)(unsigned long) = NULL;
 
 void pit_set_timer_cb(void (*cb)(unsigned long)) { on_timer = cb; }
 
