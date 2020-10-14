@@ -38,8 +38,8 @@ map_kernel:
       or $0x3, %edx
       mov %edx, (%edi)
 next_page:
-      add 0x1000, %esi
-      add 0x4, %edi
+      add $0x1000, %esi
+      add $0x4, %edi
       loop map_kernel
 done_mapping_kernel:
       // map vga
@@ -53,7 +53,7 @@ done_mapping_kernel:
       mov %ecx, %cr3
       // enable paging
       mov %cr0, %ecx
-      or 0x80010000, %ecx
+      or $0x80010000, %ecx
       mov %ecx, %cr0
       // jump to (now higher half) kernel
       lea real_start, %ecx
