@@ -22,8 +22,6 @@
       ;                                                                        \
   };
 
-// 8 byte aligned home for mb2 info
-static struct mb2_prologue *prologue = (struct mb2_prologue *)0x100000;
 static char buf[256] = {0};
 
 static inline struct mb2_tag *next_tag(struct mb2_tag *tag) {
@@ -31,7 +29,7 @@ static inline struct mb2_tag *next_tag(struct mb2_tag *tag) {
                             (uintptr_t)((uint8_t *)tag + tag->size) % 8);
 }
 
-static void woohoo(uint32_t kentry) {
+static void woohoo(uint32_t mb2, uint32_t kentry) {
   serial_write("                                 \n");
   serial_write("  ________________               \n");
   serial_write(" /  ____ < ow >   \\             \n");
@@ -55,14 +53,13 @@ static void woohoo(uint32_t kentry) {
   serial_write("                 ||     ||       \n");
   serial_write(" =============================== \n");
   serial_write("                                 \n");
-  PRINTF("mb2 %x\n", (uint32_t)prologue)
 
   asm volatile("mov %0, %%eax\n"
                "mov %1, %%ebx\n"
                "pushl %%eax\n"
                "pushl %%ebx\n"
                "jmp *%2\n" ::"i"(MB2_BOOTLOADER_MAGIC),
-               "g"((uint32_t)prologue), "g"(kentry));
+               "g"(mb2), "g"(kentry));
 }
 
 __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
@@ -117,6 +114,12 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
     }
   }
 
+  // reclaim now relocated kernel elf space for mb2
+  memset((void *)kernel, 0, (uintptr_t)initrd - (uintptr_t)kernel);
+  // 8 byte aligned mb2 start
+  struct mb2_prologue *prologue =
+      (struct mb2_prologue *)((uint8_t *)kernel + ((uintptr_t)kernel % 8));
+  PRINTF("mb2 prologue %x\n", (uint32_t)prologue)
   // ---- mb2 meminfo --------
   struct mb2_mem_info *mem_info =
       (struct mb2_mem_info *)((uint8_t *)prologue +
@@ -170,6 +173,10 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
 
   prologue->size = (uint32_t)next_tag(sentinel) - (uint32_t)prologue;
   PRINTF("final mb2 size %d bytes\n", prologue->size)
+  if ((uint32_t)kernel + prologue->size >= (uint32_t)initrd) {
+    PRINTF("mb2 is too large and has clobbered initrd :-(\n")
+    ERROR
+  }
 
-  woohoo(kentry);
+  woohoo((uint32_t)prologue, kentry);
 }

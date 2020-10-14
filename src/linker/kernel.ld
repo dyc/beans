@@ -6,6 +6,10 @@ SECTIONS {
     *(.multiboot2)
   }
 
+  .prelude : {
+    *(.prelude)
+  }
+
   . += 0xc0000000;
   _kernel_start = .;
   .text ALIGN(4K) : AT (ADDR (.text) - 0xc0000000) {

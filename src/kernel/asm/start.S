@@ -21,7 +21,7 @@ kernel_page_directory:
 kernel_page_table:
 .skip 4096
 
-.section .text
+.section .prelude
 .global _start
 .type _start, @function
 _start:
@@ -43,13 +43,13 @@ next_page:
       loop map_kernel
 done_mapping_kernel:
       // map vga
-      mov $(0x000b8000 | 0x3), kernel_page_table - 0xc0000000 + 0x3ff * 0x4
+      movl $(0x000b8000 | 0x3), kernel_page_table - 0xc0000000 + 0x3ff * 0x4
       // identity map kernel
-      mov $(kernel_page_table - 0xc0000000 + 0x3), kernel_page_directory - 0xc0000000
+      movl $(kernel_page_table - 0xc0000000 + 0x3), kernel_page_directory - 0xc0000000
       // map kernel to 0xc0000000
-      mov $(kernel_page_table - 0xc0000000 + 0x3), kernel_page_directory - 0xc0000000 + 0x300 * 0x4
+      movl $(kernel_page_table - 0xc0000000 + 0x3), kernel_page_directory - 0xc0000000 + 0x300 * 0x4
       // load kernel_page_directory
-      mov $(kernel_page_directory - 0xc0000000), %ecx
+      movl $(kernel_page_directory - 0xc0000000), %ecx
       mov %ecx, %cr3
       // enable paging
       mov %cr0, %ecx
@@ -57,11 +57,12 @@ done_mapping_kernel:
       mov %ecx, %cr0
       // jump to (now higher half) kernel
       lea real_start, %ecx
-      jmp (%ecx)
+      jmp *%ecx
 
+.section .text
 real_start:
       // clear identity mapping
-      mov $0, kernel_page_directory
+      movl $0, kernel_page_directory
       // flush tlb
       mov %cr3, %ecx
       mov %ecx, %cr3
@@ -80,4 +81,3 @@ real_start:
 
   1:  hlt
       jmp 1b
-.size _start, . - _start
