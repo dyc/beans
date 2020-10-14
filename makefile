@@ -197,7 +197,7 @@ $(LIBC_BUILD_DIR)/%.o: $(LIBC_SRC_DIR)/%.c
 	$(CC) $(KCFLAGS) -c $< -o $@
 
 $(BIN_DIR)/beans: $(KERNEL_OBJS) $(KERNEL_LIB_OBJS) $(LIB_OBJS)
-	$(CC) -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^ -lgcc
+	$(CC) -T $(KERNEL_LINKER_SCRIPT) -o $@ $(KCFLAGS) $^
 
 $(BOOT_BUILD_DIR)/%.o: $(BOOT_SRC_DIR)/%.c
 	$(CC) $(BCFLAGS) -c $< -o $@

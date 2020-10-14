@@ -23,7 +23,7 @@
   };
 
 // 8 byte aligned home for mb2 info
-static struct mb2_prologue *prologue = (struct mb2_prologue *)0x200000;
+static struct mb2_prologue *prologue = (struct mb2_prologue *)0x100000;
 static char buf[256] = {0};
 
 static inline struct mb2_tag *next_tag(struct mb2_tag *tag) {
@@ -93,7 +93,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   }
 
   const uint32_t kentry = kernel_elf->entry;
-  PRINTF("kentry %x\n", kentry)
+  PRINTF("kentry %lx\n", kentry)
 
   uint8_t *pheader_base = ((uint8_t *)kernel) + kernel_elf->ph_offset_bytes;
   PRINTF("reading %d pheaders starting at %x\n", kernel_elf->ph_ents,
@@ -101,8 +101,9 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
     struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
                                   (i * kernel_elf->ph_ent_size_bytes);
-    PRINTF("pheaders[%ld] type %d vaddr %lx memsize %x\n", i, pheader->type,
-           (long)pheader->virt_addr, pheader->memsize_bytes)
+    PRINTF("pheaders[%ld] type %d vaddr %lx paddr %lx memsize %x\n", i,
+           pheader->type, (long)pheader->virt_addr, (long)pheader->phys_addr,
+           pheader->memsize_bytes)
     if (ELF_PHTYPE_LOAD == pheader->type) {
       PRINTF("loading data seg (%d bytes) from elf offset %x to vaddr %x\n",
              pheader->filesize_bytes, pheader->offset, pheader->virt_addr)

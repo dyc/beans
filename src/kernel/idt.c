@@ -2,6 +2,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <kernel/printf.h>
+#include <kernel/serial.h>
+
 struct idt_descriptor {
   uint16_t limit;
   uint32_t base;
@@ -40,5 +43,8 @@ void idt_install() {
     idt_set_gate(i, 0, 0, 0);
   }
 
+  char buf[256] = {0};
+  sprintf(buf, "loading idt to %x\n", (uintptr_t)&idt.idtr);
+  serial_write(SERIAL_PORT_COM1, buf);
   load_idt((uintptr_t)&idt.idtr);
 }

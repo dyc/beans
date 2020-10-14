@@ -79,7 +79,7 @@ static void pic_remap() {
   iowait();
 
   // todo: yeah, interrupts causing issues somewhere
-  outb(pic_data(PIC1), 0xff);
+  outb(pic_data(PIC1), 0xfd);
   outb(pic_data(PIC2), 0xff);
 }
 
@@ -105,7 +105,7 @@ void pic_ack(size_t irq) {
 
 void irq_install() {
   pic_remap();
-  size_t n = sizeof(irqs) / sizeof(void (*)(void));
+  size_t n = sizeof(irqs) / sizeof(irqs[0]);
   for (size_t i = 0; i < n; ++i) {
     idt_set_gate(PIC1_OFFSET + i,   // gate
                  (uint32_t)irqs[i], // offset

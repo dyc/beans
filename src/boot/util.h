@@ -66,11 +66,7 @@ static size_t decllwidth(long long value) {
   return width;
 }
 
-static size_t hexwidth(int value) {
-  if (value < 0) {
-    value *= -1;
-  }
-
+static size_t hexwidth(unsigned int value) {
   size_t width = 0;
   do {
     ++width;
@@ -79,11 +75,7 @@ static size_t hexwidth(int value) {
   return width;
 }
 
-static size_t hexlwidth(long value) {
-  if (value < 0) {
-    value *= -1;
-  }
-
+static size_t hexlwidth(unsigned long value) {
   size_t width = 0;
   do {
     ++width;
@@ -137,16 +129,10 @@ static int printdecll(char *out, long long value) {
   return start - out + 1;
 }
 
-static int printhex(char *out, int value) {
+static int printhex(char *out, unsigned int value) {
   char *stop = out;
-  if (value < 0) {
-    *stop = '-';
-    ++stop;
-  }
-  *stop = '0';
-  ++stop;
-  *stop = 'x';
-  ++stop;
+  *(stop++) = '0';
+  *(stop++) = 'x';
 
   char *start = stop + hexwidth(value) - 1;
   for (char *o = start; o >= stop; --o) {
@@ -161,16 +147,10 @@ static int printhex(char *out, int value) {
   return start - out + 1;
 }
 
-static int printhexl(char *out, long value) {
+static int printhexl(char *out, unsigned long value) {
   char *stop = out;
-  if (value < 0) {
-    *stop = '-';
-    ++stop;
-  }
-  *stop = '0';
-  ++stop;
-  *stop = 'x';
-  ++stop;
+  *(stop++) = '0';
+  *(stop++) = 'x';
 
   char *start = stop + hexlwidth(value) - 1;
   for (char *o = start; o >= stop; --o) {
@@ -237,9 +217,9 @@ int sprintf(char *out, const char *fmt, ...) {
     }
     case 'x': {
       if (0 == length_modifier) {
-        o += printhex(o, va_arg(arg_p, int));
+        o += printhex(o, va_arg(arg_p, unsigned int));
       } else if (1 == length_modifier) {
-        o += printhexl(o, va_arg(arg_p, long));
+        o += printhexl(o, va_arg(arg_p, unsigned long));
       }
       ++f;
       break;
