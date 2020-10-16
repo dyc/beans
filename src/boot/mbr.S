@@ -50,7 +50,7 @@ eread:
   jnc eread
   jmp hang
 boot:
-  mov magic_addr, %bx
+  mov MAGIC_ADDR, %bx
   cmp $0xaa55, %bx
   jne hang
   mov (boot_partition), %si
@@ -118,6 +118,6 @@ partition1_size: // 163840
   .byte 0x00
 .skip 48, 0 // partitions 2-4
 
-.equ magic_addr, 0x7dfe
+.set MAGIC_ADDR, 0x7dfe
 
 .word 0xaa55

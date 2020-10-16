@@ -14,7 +14,7 @@ _start:
 
 // assume everything we need is in the first fat
 load_fat:
-  movw $fat_start, (dap_dest_addr_offset)
+  movw $FAT_START, (dap_dest_addr_offset)
   // account for partition LBA offset
   // could also use pte's lba: 8(pte)
   mov 0x1c(%bx), %eax // bpb_hidden_sectors
@@ -27,43 +27,43 @@ load_fat:
   mull 0x24(%bx) // ebpb_sectors_per_fat
   add %eax, (dap_lba) // root cluster lba
   // loads will go right after fat
-  addw $sector_bytes, (dap_dest_addr_offset)
+  addw $SECTOR_BYTES, (dap_dest_addr_offset)
 
 load_root_cluster:
   mov 0x2c(%bx), %eax // root cluster num
   call load_cluster
-find_boot_dir:
+find_BOOT_DIR:
   mov (dap_dest_addr_offset), %si
-  mov $boot_dir, %di
-find_boot_dir_loop:
-  mov $boot_dir_strlen, %cl
+  mov $BOOT_DIR, %di
+find_BOOT_DIR_loop:
+  mov $BOOT_DIR_STRLEN, %cl
   add $0x20, %si
   call cmpstr
-  jne find_boot_dir_loop
+  jne find_BOOT_DIR_loop
   call load_cluster_from_dirent
 
   // find each of loadk, kernel and initrd
   mov $3, %dl
   mov (dap_dest_addr_offset), %si
 check_loadk:
-  mov $loadk_file, %di
-  mov $loadk_file_strlen, %cl
+  mov $LOADK_FILE, %di
+  mov $LOADK_FILE_STRLEN, %cl
   call cmpstr
   jne check_kernel
   call get_cluster_info
   mov %ax, (loadk_cluster)
   jmp maybe_check_next
 check_kernel:
-  mov $kernel_file, %di
-  mov $kernel_file_strlen, %cl
+  mov $KERNEL_FILE, %di
+  mov $KERNEL_FILE_STRLEN, %cl
   call cmpstr
   jne check_initrd
   call get_cluster_info
   mov %ax, (kernel_cluster)
   jmp maybe_check_next
 check_initrd:
-  mov $initrd_file, %di
-  mov $initrd_file_strlen, %cl
+  mov $INITRD_FILE, %di
+  mov $INITRD_FILE_STRLEN, %cl
   call cmpstr
   jne check_next
   call get_cluster_info
@@ -96,7 +96,7 @@ check_next:
   jmp check_loadk
 
 load_start:
-  movw $loadk_start, (dap_dest_addr_offset)
+  movw $LOADK_START, (dap_dest_addr_offset)
 load_loadk:
   mov (loadk_cluster), %ax
   call load_file_cluster
@@ -126,12 +126,12 @@ load_initrd:
 
   pushl (initrd_start)
   pushl (kernel_start)
-  pushl $mmap_start
+  pushl $MMAP_start
   xor %eax, %eax
   mov (e820_count), %al
   push %eax
   pushl $hang
-  ljmp $0x08, $loadk_start
+  ljmp $0x08, $LOADK_START
 
 // params
 // - %si: dirent
@@ -162,11 +162,11 @@ load_cluster:
 // out
 // - %ax: next cluster, or zero
 get_next_cluster:
-  mov fat_start(,%eax,4), %eax
-  and $fat_mask, %eax
-  cmp $fat_valid_start, %eax
+  mov FAT_START(,%eax,4), %eax
+  and $FAT_MASK, %eax
+  cmp $FAT_VALID_START, %eax
   jl no_next_cluster
-  cmp $fat_valid_end, %eax
+  cmp $FAT_VALID_END, %eax
   jl has_next_cluster
 no_next_cluster:
   xor %eax, %eax
@@ -177,7 +177,7 @@ has_next_cluster:
 // - %eax: first cluster
 load_file_cluster:
   call load_cluster
-  addw $sector_bytes, (dap_dest_addr_offset)
+  addw $SECTOR_BYTES, (dap_dest_addr_offset)
   call get_next_cluster
   test %eax, %eax
   jz load_file_cluster_done
@@ -247,21 +247,20 @@ initrd_cluster:
 initrd_start:
   .word 0
   .word 0
-boot_dir: .ascii "BOOT"
-.equ boot_dir_strlen, .-boot_dir
-loadk_file: .ascii "LOADK"
-.equ loadk_file_strlen, .-loadk_file
-// todo: maybe get this from a config instead
-kernel_file: .ascii "BEANS"
-.equ kernel_file_strlen, .-kernel_file
-initrd_file: .ascii "INITRD"
-.equ initrd_file_strlen, .-initrd_file
-.equ mmap_start, 0x500
-.equ fat_start, 0x8400
-.equ loadk_start, 0x8600
-.equ fat_mask, 0x0fffffff
-.equ fat_valid_start, 0x00000002
-.equ fat_valid_end, 0x0ffffff0
-.equ sector_bytes, 0x200
+BOOT_DIR: .ascii "BOOT"
+.set BOOT_DIR_STRLEN, .-BOOT_DIR
+LOADK_FILE: .ascii "LOADK"
+.set LOADK_FILE_STRLEN, .-LOADK_FILE
+KERNEL_FILE: .ascii "BEANS"
+.set KERNEL_FILE_STRLEN, .-KERNEL_FILE
+INITRD_FILE: .ascii "INITRD"
+.set INITRD_FILE_STRLEN, .-INITRD_FILE
+.set MMAP_start, 0x500
+.set FAT_START, 0x8400
+.set LOADK_START, 0x8600
+.set FAT_MASK, 0x0fffffff
+.set FAT_VALID_START, 0x00000002
+.set FAT_VALID_END, 0x0ffffff0
+.set SECTOR_BYTES, 0x200
 
 .skip 512-(.-_start), 0

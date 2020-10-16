@@ -45,7 +45,8 @@ _start:
 .section .text
 real_start:
       // clear identity mapping
-      movl $0, kernel_page_directory
+      movl $0x0, kernel_page_directory
+
       // flush tlb
       mov %cr3, %ecx
       mov %ecx, %cr3
