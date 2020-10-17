@@ -1,6 +1,7 @@
 target remote :1234
 # todo: add this back
 # add-symbol-file build/sym/loadk.debug
+# todo: fix this now that we use dap segment
 b *0x8600
 c
 # todo: layout split, once we have symbols

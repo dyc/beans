@@ -96,7 +96,8 @@ check_next:
   jmp check_loadk
 
 load_start:
-  movw $LOADK_START, (dap_dest_addr_offset)
+  movw $LOADK_START_OFFSET, (dap_dest_addr_offset)
+  movw $LOADK_START_SEGMENT, (dap_dest_addr_segment)
 load_loadk:
   mov (loadk_cluster), %ax
   call load_file_cluster
@@ -131,7 +132,9 @@ load_initrd:
   mov (e820_count), %al
   push %eax
   pushl $hang
-  ljmp $0x08, $LOADK_START
+  // todo: fix this. one thing i saw was to manually
+  // encode the 32 bit jmp instruction here? seems bleh
+  ljmp $0x08, $LOADK_START_OFFSET
 
 // params
 // - %si: dirent
@@ -257,7 +260,8 @@ INITRD_FILE: .ascii "INITRD"
 .set INITRD_FILE_STRLEN, .-INITRD_FILE
 .set MMAP_start, 0x500
 .set FAT_START, 0x8400
-.set LOADK_START, 0x8600
+.set LOADK_START_OFFSET, 0x0000
+.set LOADK_START_SEGMENT, 0x1000
 .set FAT_MASK, 0x0fffffff
 .set FAT_VALID_START, 0x00000002
 .set FAT_VALID_END, 0x0ffffff0
