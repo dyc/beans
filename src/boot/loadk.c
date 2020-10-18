@@ -67,7 +67,8 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
                                                    uint32_t *kernel,
                                                    uint32_t *initrd) {
   serial_enable();
-  PRINTF("%d smaps %lx kernel %lx initrd %lx\n", smaps, (uint32_t) smap, (uint32_t)kernel, (uint32_t)initrd)
+  PRINTF("%d smaps %lx kernel %lx initrd %lx\n", smaps, (uint32_t)smap,
+         (uint32_t)kernel, (uint32_t)initrd)
 
   // ---- load kernel --------
   struct elf_header *kernel_elf = (struct elf_header *)kernel;
@@ -97,8 +98,9 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
   PRINTF("reading %d pheaders starting at %x\n", kernel_elf->ph_ents,
          (uint32_t)pheader_base)
   for (size_t i = 0; i < kernel_elf->ph_ents; ++i) {
-    struct elf_pheader *pheader = (struct elf_pheader *)pheader_base +
-                                  (i * kernel_elf->ph_ent_size_bytes);
+    struct elf_pheader *pheader =
+        (struct elf_pheader *)(pheader_base +
+                               (i * kernel_elf->ph_ent_size_bytes));
     PRINTF("pheaders[%ld] type %d vaddr %lx paddr %lx memsize %x\n", i,
            pheader->type, (long)pheader->virt_addr, (long)pheader->phys_addr,
            pheader->memsize_bytes)

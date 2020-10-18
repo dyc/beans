@@ -12,7 +12,6 @@
 .long LENGTH
 .long CHECKSUM
 
-.section .prelude
 .align 4096
 kernel_page_directory:
 // identity map first mb, containing boot info
@@ -22,6 +21,8 @@ kernel_page_directory:
 .long READ_WRITE_PRESENT
 .skip (1024 - KERNEL_PAGE_NUMBER - 1) * 4, 0
 
+.section .prelude, "ax", @progbits
+.align 16
 .global _start
 .type _start, @function
 _start:
@@ -39,11 +40,11 @@ _start:
       mov %ecx, %cr0
 
       // jump to (now higher half) kernel
-      lea real_start, %ecx
+      lea _real_start, %ecx
       jmp *%ecx
 
 .section .text
-real_start:
+_real_start:
       // clear identity mapping
       movl $0x0, kernel_page_directory
 
