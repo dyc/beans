@@ -1,5 +1,5 @@
-// loads /boot/loadk, /boot/kernel, /boot/initrd
-// into memory starting at $0x8400 (in that order)
+// loads /boot/loadk, /boot/kernel, /boot/initrd,
+// in that order, $LOAD_SEGMENT:0x0000
 // clobbery :'-)
 // org 0x8200 (from linker script)
 .code16
@@ -26,20 +26,19 @@ load_fat:
   mov 0x10(%bx), %al // bpb_fats
   mull 0x24(%bx) // ebpb_sectors_per_fat
   add %eax, (dap_lba) // root cluster lba
-  // loads will go right after fat
   addw $SECTOR_BYTES, (dap_dest_addr_offset)
 
 load_root_cluster:
   mov 0x2c(%bx), %eax // root cluster num
   call load_cluster
-find_BOOT_DIR:
+find_boot_dir:
   mov (dap_dest_addr_offset), %si
   mov $BOOT_DIR, %di
-find_BOOT_DIR_loop:
+find_boot_dir_loop:
   mov $BOOT_DIR_STRLEN, %cl
   add $0x20, %si
   call cmpstr
-  jne find_BOOT_DIR_loop
+  jne find_boot_dir_loop
   call load_cluster_from_dirent
 
   // find each of loadk, kernel and initrd
@@ -96,19 +95,19 @@ check_next:
   jmp check_loadk
 
 load_start:
-  movw $LOADK_START_OFFSET, (dap_dest_addr_offset)
-  movw $LOADK_START_SEGMENT, (dap_dest_addr_segment)
+  movw $0x0, (dap_dest_addr_offset)
+  movw $LOAD_SEGMENT, (dap_dest_addr_segment)
 load_loadk:
   mov (loadk_cluster), %ax
   call load_file_cluster
 load_kernel:
   mov (dap_dest_addr_offset), %ax
-  mov %ax, (kernel_start)
+  mov %ax, (kernel_offset)
   mov (kernel_cluster), %ax
   call load_file_cluster
 load_initrd:
   mov (dap_dest_addr_offset), %ax
-  mov %ax, (initrd_start)
+  mov %ax, (initrd_offset)
   mov (initrd_cluster), %ax
   call load_file_cluster
 
@@ -124,18 +123,22 @@ load_initrd:
   mov %ax, %fs
   mov %ax, %gs
   mov %ax, %ss
-
-  pushl (initrd_start)
-  pushl (kernel_start)
-  pushl $MMAP_start
+  // prot mode jump into loadk jump
+  ljmp $0x08, $trampoline
+.code32
+// todo: somethings up here
+trampoline:
+  pushl $LOAD_BASE + (initrd_offset)
+  pushl $LOAD_BASE + (kernel_offset)
+  pushl $MMAP_START
   xor %eax, %eax
   mov (e820_count), %al
   push %eax
   pushl $hang
-  // todo: fix this. one thing i saw was to manually
-  // encode the 32 bit jmp instruction here? seems bleh
-  ljmp $0x08, $LOADK_START_OFFSET
+  mov $LOAD_BASE, %eax
+  jmp *%eax
 
+.code16
 // params
 // - %si: dirent
 // out
@@ -242,12 +245,12 @@ loadk_cluster:
   .word 0
 kernel_cluster:
   .word 0
-kernel_start:
+kernel_offset:
   .word 0
   .word 0
 initrd_cluster:
   .word 0
-initrd_start:
+initrd_offset:
   .word 0
   .word 0
 BOOT_DIR: .ascii "BOOT"
@@ -258,10 +261,10 @@ KERNEL_FILE: .ascii "BEANS"
 .set KERNEL_FILE_STRLEN, .-KERNEL_FILE
 INITRD_FILE: .ascii "INITRD"
 .set INITRD_FILE_STRLEN, .-INITRD_FILE
-.set MMAP_start, 0x500
+.set MMAP_START, 0x500
 .set FAT_START, 0x8400
-.set LOADK_START_OFFSET, 0x0000
-.set LOADK_START_SEGMENT, 0x1000
+.set LOAD_SEGMENT, 0x1000
+.set LOAD_BASE, 0x10000
 .set FAT_MASK, 0x0fffffff
 .set FAT_VALID_START, 0x00000002
 .set FAT_VALID_END, 0x0ffffff0

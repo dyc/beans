@@ -67,6 +67,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
                                                    uint32_t *kernel,
                                                    uint32_t *initrd) {
   serial_enable();
+  PRINTF("in loadk\n")
 
   // ---- load kernel --------
   struct elf_header *kernel_elf = (struct elf_header *)kernel;

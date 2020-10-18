@@ -1,6 +1,6 @@
 OUTPUT_FORMAT(binary)
 SECTIONS {
-  . = 0x8600;
+  . = 0x10000;
   .text : {
     *(.text.loadk);
     *(.text);
