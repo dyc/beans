@@ -17,7 +17,7 @@
 
 #define ERROR                                                                  \
   {                                                                            \
-    PRINTF(":-(")                                                              \
+    PRINTF(":-(\n")                                                            \
     while (1)                                                                  \
       ;                                                                        \
   };
@@ -67,7 +67,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
                                                    uint32_t *kernel,
                                                    uint32_t *initrd) {
   serial_enable();
-  PRINTF("in loadk\n")
+  PRINTF("%d smaps %lx kernel %lx initrd %lx\n", smaps, (uint32_t) smap, (uint32_t)kernel, (uint32_t)initrd)
 
   // ---- load kernel --------
   struct elf_header *kernel_elf = (struct elf_header *)kernel;

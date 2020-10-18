@@ -1,5 +1,5 @@
 // loads /boot/loadk, /boot/kernel, /boot/initrd,
-// in that order, $LOAD_SEGMENT:0x0000
+// in that order, to $LOAD_BASE
 // clobbery :'-)
 // org 0x8200 (from linker script)
 .code16
@@ -8,7 +8,6 @@ _start:
   popw (drive_number)
   pop %bx // bpb_start
   xor %eax, %eax
-  // clear ds, es for cmpstr
   mov %ax, %ds
   mov %ax, %es
 
@@ -95,19 +94,21 @@ check_next:
   jmp check_loadk
 
 load_start:
-  movw $0x0, (dap_dest_addr_offset)
+  movw $0x0000, (dap_dest_addr_offset)
   movw $LOAD_SEGMENT, (dap_dest_addr_segment)
 load_loadk:
   mov (loadk_cluster), %ax
   call load_file_cluster
 load_kernel:
   mov (dap_dest_addr_offset), %ax
-  mov %ax, (kernel_offset)
+  mov %ax, (kernel_addr)
+  addl $LOAD_BASE, (kernel_addr)
   mov (kernel_cluster), %ax
   call load_file_cluster
 load_initrd:
   mov (dap_dest_addr_offset), %ax
-  mov %ax, (initrd_offset)
+  mov %ax, (initrd_addr)
+  addl $LOAD_BASE, (initrd_addr)
   mov (initrd_cluster), %ax
   call load_file_cluster
 
@@ -123,13 +124,11 @@ load_initrd:
   mov %ax, %fs
   mov %ax, %gs
   mov %ax, %ss
-  // prot mode jump into loadk jump
   ljmp $0x08, $trampoline
 .code32
-// todo: somethings up here
 trampoline:
-  pushl $LOAD_BASE + (initrd_offset)
-  pushl $LOAD_BASE + (kernel_offset)
+  pushl (initrd_addr)
+  pushl (kernel_addr)
   pushl $MMAP_START
   xor %eax, %eax
   mov (e820_count), %al
@@ -245,12 +244,12 @@ loadk_cluster:
   .word 0
 kernel_cluster:
   .word 0
-kernel_offset:
+kernel_addr:
   .word 0
   .word 0
 initrd_cluster:
   .word 0
-initrd_offset:
+initrd_addr:
   .word 0
   .word 0
 BOOT_DIR: .ascii "BOOT"
