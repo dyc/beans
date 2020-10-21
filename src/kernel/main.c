@@ -59,24 +59,24 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
            (struct mb2_tag *)((uint8_t *)mb2 + sizeof(struct mb2_prologue));
        MB2_TAG_TYPE_END != tag->type; tag = next_tag(tag)) {
     PRINTF("tag type %d\n", tag->type)
-    switch (tag->type) {
-    case MB2_TAG_TYPE_MODULE: {
-      struct mb2_module *module = (struct mb2_module *)tag;
-      PRINTF("found module with string %s\n", module->string)
-      if (!strcmp(module->string, "initrd")) {
-        initrd_module = module;
-      }
-      break;
-    }
-    case MB2_TAG_TYPE_MEM_INFO: {
-      mem_info = (struct mb2_mem_info *)tag;
-      break;
-    }
-    case MB2_TAG_TYPE_MMAP: {
-      mmap = (struct mb2_mmap *)tag;
-      break;
-    }
-    }
+    // switch (tag->type) {
+    // case MB2_TAG_TYPE_MODULE: {
+    //   struct mb2_module *module = (struct mb2_module *)tag;
+    //   PRINTF("found module with string %s\n", module->string)
+    //   if (!strcmp(module->string, "initrd")) {
+    //     initrd_module = module;
+    //   }
+    //   break;
+    // }
+    // case MB2_TAG_TYPE_MEM_INFO: {
+    //   mem_info = (struct mb2_mem_info *)tag;
+    //   break;
+    // }
+    // case MB2_TAG_TYPE_MMAP: {
+    //   mmap = (struct mb2_mmap *)tag;
+    //   break;
+    // }
+    // }
   }
   PRINTF("collected mb2 info\n")
 

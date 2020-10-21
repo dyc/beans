@@ -2,10 +2,10 @@
 .set ISA,      0
 .set LENGTH,   0x10
 .set CHECKSUM, -(MAGIC + ISA + LENGTH)
-.set KERNEL_PAGE_NUMBER, (0xc0000000 >> 22)
+.set KERNEL_PAGE_NUMBER, (0xc0000000 >> 22) // 768th PD entry
 .set READ_WRITE_PRESENT, 0x00000083
 
-.section .multiboot2
+.section .multiboot2, "a", @progbits
 .align 4
 .long MAGIC
 .long ISA
@@ -26,9 +26,10 @@ kernel_page_directory:
 .global _start
 .type _start, @function
 _start:
-      mov $kernel_page_directory, %ecx
+      lea kernel_page_directory, %ecx
       mov %ecx, %cr3
 
+      // todo: check if the next two blocks are actually what we want
       // enable 4mb pages
       mov %cr4, %ecx
       orl $0x00000010, %ecx
@@ -39,12 +40,12 @@ _start:
       or $0x80010000, %ecx
       mov %ecx, %cr0
 
-      // jump to (now higher half) kernel
-      lea _real_start, %ecx
+      lea _higher_half_start, %ecx
       jmp *%ecx
 
 .section .text
-_real_start:
+.align 4
+_higher_half_start:
       // clear identity mapping
       movl $0x0, kernel_page_directory
 

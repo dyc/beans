@@ -1,0 +1,5 @@
+target remote :1234
+set architecture i8086
+set tdesc filename .gdb/i386-32bit_tdesc.xml
+b *0x102000
+c
