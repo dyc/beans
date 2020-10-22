@@ -108,10 +108,11 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
       PRINTF("loading data seg (%d bytes) from elf offset %x to vaddr %x\n",
              pheader->filesize_bytes, pheader->offset, pheader->virt_addr)
 
-      memcpy((void *)pheader->virt_addr, (void *)kernel + pheader->offset,
+      // todo: should we be loading to pheader->virt_addr instead?
+      memcpy((void *)pheader->phys_addr, (void *)kernel + pheader->offset,
              pheader->memsize_bytes);
       if (pheader->filesize_bytes < pheader->memsize_bytes) {
-        memset((void *)pheader->virt_addr + pheader->filesize_bytes, 0,
+        memset((void *)pheader->phys_addr + pheader->filesize_bytes, 0,
                pheader->memsize_bytes - pheader->filesize_bytes);
       }
     }

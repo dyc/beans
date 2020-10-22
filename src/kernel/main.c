@@ -59,24 +59,24 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
            (struct mb2_tag *)((uint8_t *)mb2 + sizeof(struct mb2_prologue));
        MB2_TAG_TYPE_END != tag->type; tag = next_tag(tag)) {
     PRINTF("tag type %d\n", tag->type)
-    // switch (tag->type) {
-    // case MB2_TAG_TYPE_MODULE: {
-    //   struct mb2_module *module = (struct mb2_module *)tag;
-    //   PRINTF("found module with string %s\n", module->string)
-    //   if (!strcmp(module->string, "initrd")) {
-    //     initrd_module = module;
-    //   }
-    //   break;
-    // }
-    // case MB2_TAG_TYPE_MEM_INFO: {
-    //   mem_info = (struct mb2_mem_info *)tag;
-    //   break;
-    // }
-    // case MB2_TAG_TYPE_MMAP: {
-    //   mmap = (struct mb2_mmap *)tag;
-    //   break;
-    // }
-    // }
+    switch (tag->type) {
+    case MB2_TAG_TYPE_MODULE: {
+      struct mb2_module *module = (struct mb2_module *)tag;
+      PRINTF("found module with string %s\n", module->string)
+      if (!strcmp(module->string, "initrd")) {
+        initrd_module = module;
+      }
+      break;
+    }
+    case MB2_TAG_TYPE_MEM_INFO: {
+      mem_info = (struct mb2_mem_info *)tag;
+      break;
+    }
+    case MB2_TAG_TYPE_MMAP: {
+      mmap = (struct mb2_mmap *)tag;
+      break;
+    }
+    }
   }
   PRINTF("collected mb2 info\n")
 
@@ -123,19 +123,24 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   PRINTF("pit ready\n")
 
   vga_init();
-  vga_fg(VGA_COLOR_BLACK);
-  vga_bg(VGA_COLOR_WHITE);
+  vga_fg(VGA_COLOR_WHITE);
+  vga_bg(VGA_COLOR_BLACK);
   PRINTF("vga ready\n")
 
   keyboard_install();
   PRINTF("kbd ready\n")
 
-  memset(buf, 0, sizeof(buf) / sizeof(buf[0]));
+  char not_buf[2] = {0};
   while (1) {
-    for (size_t i = 0; i < KEYBOARD_CURSOR; ++i) {
-      buf[i] = scancode(KEYBOARD_BUFFER[i]);
+    if (KEYBOARD_BUFFER[0] == 0) {
+      asm volatile("hlt");
+      continue;
     }
-    KEYBOARD_CURSOR = 0;
-    vga_write(buf);
+
+    not_buf[0] = scancode(KEYBOARD_BUFFER[0]);
+    vga_write(not_buf);
+    serial_write(SERIAL_PORT_COM1, not_buf);
+    // todo: lol
+    KEYBOARD_BUFFER[0] = 0;
   }
 }

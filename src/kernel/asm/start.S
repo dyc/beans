@@ -46,8 +46,9 @@ _start:
 .section .text
 .align 4
 _higher_half_start:
+      // todo: add this back
       // clear identity mapping
-      movl $0x0, kernel_page_directory
+      // movl $0x0, kernel_page_directory
 
       // flush tlb
       mov %cr3, %ecx
