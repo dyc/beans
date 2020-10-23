@@ -182,5 +182,6 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
     ERROR
   }
 
-  woohoo((uint32_t)prologue, kentry);
+  // todo: don't forget about me
+  woohoo((uint32_t)prologue + 0xc0000000, kentry);
 }
