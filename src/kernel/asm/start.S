@@ -47,7 +47,7 @@ _start:
 .align 4
 _higher_half_start:
       // clear identity mapping
-      movl $0x0, kernel_page_directory
+      // movl $0x0, kernel_page_directory
 
       // flush tlb
       mov %cr3, %ecx

@@ -84,7 +84,6 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     PRINTF("didn't find mem_info tag!\n")
     return;
   }
-  paging_init(mem_info->mem_lower + mem_info->mem_upper);
 
   if (NULL == mmap) {
     PRINTF("didn't find mmap tag!\n")
@@ -95,7 +94,12 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
        ++entry) {
     PRINTF("mmap @ %x base %lx size %lx type %d\n", (uint32_t)entry,
            (long)entry->base, (long)entry->size, entry->type)
-    if (MB2_MMAP_AVAILABLE == entry->type) {
+    if (MB2_MMAP_AVAILABLE == entry->type && 0x0 != entry->base) {
+      // todo: this assumes (only) one region of available memory
+      // might be nice to assert(entry->size == mem_info->mem_upper);
+      paging_init(entry->base, entry->size);
+      PRINTF("paging initialized at %lx with %lx bytes\n", (long)entry->base,
+             (long)entry->size)
       for (uintptr_t p = entry->base; p < entry->base + entry->size;
            p += PAGE_SIZE_BYTES) {
         paging_mark_avail(p);
@@ -103,6 +107,10 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     }
   }
   PRINTF("paging ready\n")
+  if (mem_info->mem_upper / 4 != get_num_pages()) {
+    PRINTF("we have %lx bytes worth of  uninitialized pages in upper mem\n",
+           mem_info->mem_upper - (get_num_pages() * 4))
+  }
 
   heap_init();
   PRINTF("heap ready\n")
