@@ -72,7 +72,7 @@ void pmap(uintptr_t vaddr, uintptr_t paddr, bool writable, bool user) {
   pte->present = 1;
   pte->read_write = writable ? 1 : 0;
   pte->user_super = user ? 1 : 0;
-  pte->frame = (uintptr_t)paddr & ~0xfff;
+  pte->frame = (uintptr_t)((paddr & ~0xfff) >> 12);
 }
 
 void punmap(uintptr_t vaddr) {
