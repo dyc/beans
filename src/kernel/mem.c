@@ -42,17 +42,20 @@ uintptr_t get_cr3() {
 
 void set_crt3(uintptr_t addr) { asm volatile("mov %%eax, %%cr3" ::"a"(addr)); }
 
+inline size_t pdi(uintptr_t vaddr) { return (vaddr >> 22) & 0x3ff; }
+
+inline size_t pti(uintptr_t vaddr) { return (vaddr >> 12) & 0x3ff; }
+
 uintptr_t get_pte(uintptr_t vaddr) {
-  uintptr_t pdi = (vaddr >> 22) & 0x3ff;
-  struct pte *pte = (struct pte *)pd[pdi];
+  struct pte *pte = (struct pte *)pd[pdi(vaddr)];
   if (!pte->present) {
-    pd[pdi] = allocate_page();
+    pd[pdi(vaddr)] = allocate_page();
     pte->present = 1;
     pte->read_write = 1;
     pte->user_super = 1;
   }
-  uintptr_t *pt = (uintptr_t *)(pd[pdi] & ~0xfff);
-  return pt[(vaddr >> 12) & 0x3ff];
+  uintptr_t *pt = (uintptr_t *)(pd[pdi(vaddr)] & ~0xfff);
+  return pt[pti(vaddr)];
 }
 
 void paging_init(uintptr_t start, size_t size) {
@@ -63,10 +66,13 @@ void paging_init(uintptr_t start, size_t size) {
   pd = (uintptr_t *)allocate_page();
 }
 
-void pmap(uintptr_t vaddr, uintptr_t paddr, uint32_t flags) {
+void pmap(uintptr_t vaddr, uintptr_t paddr, bool writable, bool user) {
   invlpg(vaddr);
-  uintptr_t *pte = (uintptr_t *)get_pte(vaddr);
-  *pte = (uintptr_t)(paddr & ~0xfff) & flags & 1;
+  struct pte *pte = (struct pte *)get_pte(vaddr);
+  pte->present = 1;
+  pte->read_write = writable ? 1 : 0;
+  pte->user_super = user ? 1 : 0;
+  pte->frame = (uintptr_t)paddr & ~0xfff;
 }
 
 void punmap(uintptr_t vaddr) {

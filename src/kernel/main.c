@@ -102,7 +102,7 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
              (long)entry->size)
       for (uintptr_t p = entry->base; p < entry->base + entry->size;
            p += PAGE_SIZE_BYTES) {
-        pmap(p, p, 0);
+        pmap(p, p, true, false);
         // paging_mark_avail(p);
       }
     }
