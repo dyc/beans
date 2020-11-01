@@ -6,9 +6,16 @@
 
 extern const uint32_t PAGE_SIZE_BYTES;
 
-struct Node {
-  struct Node *next;
-};
+struct pte {
+  unsigned int present : 1;
+  unsigned int read_write : 1;
+  unsigned int user_super : 1;
+  unsigned int write_through : 1;
+  unsigned int cache_disabled : 1;
+  unsigned int accessed : 1;
+  unsigned int dirty : 1;
+  unsigned int global : 1;
+} __attribute__((packed));
 
 extern void paging_init(uintptr_t start, size_t size);
 extern void pmap(uintptr_t vaddr, uintptr_t paddr, uint32_t flags);

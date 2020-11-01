@@ -5,7 +5,11 @@
 
 const uint32_t PAGE_SIZE_BYTES = 0x1000;
 
-struct Node *free_ptr = NULL;
+struct node {
+  struct node *next;
+};
+
+struct node *free_ptr = NULL;
 size_t num_pages;
 uintptr_t end;
 uintptr_t *pd;
@@ -21,7 +25,7 @@ uintptr_t allocate_page() {
 }
 
 void free_page(uintptr_t addr) {
-  struct Node *n = (struct Node *)addr;
+  struct node *n = (struct node *)addr;
   n->next = free_ptr;
   free_ptr = n;
 }
@@ -40,21 +44,23 @@ void set_crt3(uintptr_t addr) { asm volatile("mov %%eax, %%cr3" ::"a"(addr)); }
 
 uintptr_t get_pte(uintptr_t vaddr) {
   uintptr_t pdi = (vaddr >> 22) & 0x3ff;
-  // not present
-  if ((pd[pdi] & 1) == 0) {
-    return 0;
+  struct pte *pte = (struct pte *)pd[pdi];
+  if (!pte->present) {
+    pd[pdi] = allocate_page();
+    pte->present = 1;
+    pte->read_write = 1;
+    pte->user_super = 1;
   }
   uintptr_t *pt = (uintptr_t *)(pd[pdi] & ~0xfff);
   return pt[(vaddr >> 12) & 0x3ff];
 }
 
 void paging_init(uintptr_t start, size_t size) {
-  free_ptr = (struct Node *)start;
+  free_ptr = (struct node *)start;
   num_pages = size / 4;
   end = start + size;
 
   pd = (uintptr_t *)allocate_page();
-  return;
 }
 
 void pmap(uintptr_t vaddr, uintptr_t paddr, uint32_t flags) {
