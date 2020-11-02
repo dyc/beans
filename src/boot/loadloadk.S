@@ -1,7 +1,7 @@
 // loads /boot/loadk, /boot/kernel, /boot/initrd,
 // in that order, to $LOAD_BASE
 // clobbery :'-)
-// org 0x8200 (from linker script)
+// org 0x8000 (from linker script)
 .code16
 _start:
   popw (e820_count)
@@ -261,7 +261,7 @@ KERNEL_FILE: .ascii "BEANS"
 INITRD_FILE: .ascii "INITRD"
 .set INITRD_FILE_STRLEN, .-INITRD_FILE
 .set MMAP_START, 0x500
-.set FAT_START, 0x8400
+.set FAT_START, 0x8200
 .set LOAD_SEGMENT, 0x1000
 .set LOAD_BASE, 0x10000
 .set FAT_MASK, 0x0fffffff

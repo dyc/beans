@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 extern const uint32_t PAGE_SIZE_BYTES;
+extern char _ld_kernel_phys_end;
 
 struct pde {
   unsigned int present : 1;
@@ -34,8 +35,6 @@ struct pte {
 extern void paging_init(uintptr_t start, size_t size);
 extern void pmap(uintptr_t vaddr, uintptr_t paddr, bool writable, bool user);
 extern void punmap(uintptr_t vaddr);
-// todo: delete this debugging function
-extern uint32_t get_num_pages();
 
 extern void heap_init();
 

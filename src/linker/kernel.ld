@@ -11,7 +11,8 @@ SECTIONS {
   }
 
   . += 0xc0000000;
-  _kernel_start = .;
+  _ld_kernel_phys_start = . - 0xc0000000;
+  _ld_kernel_virt_start = .;
   .text ALIGN(4K) : AT (ADDR (.text) - 0xc0000000) {
     *(.text)
   }
@@ -28,7 +29,8 @@ SECTIONS {
     *(COMMON)
     *(.bss)
   }
-  _kernel_end = .;
+  _ld_kernel_phys_end = . - 0xc0000000;
+  _ld_kernel_virt_end = .;
 
   /DISCARD/ : {
     *(.comment)

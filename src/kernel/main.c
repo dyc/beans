@@ -1,6 +1,7 @@
 #include <kernel/desc.h>
 #include <kernel/fs.h>
 #include <kernel/libc.h>
+#include <kernel/macros.h>
 #include <kernel/mem.h>
 #include <kernel/multiboot2.h>
 #include <kernel/printf.h>
@@ -54,7 +55,12 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     return;
   }
 
-  // collect requisite mb2 tags
+  // collect requisite mb2 tags and calculate start of kernel heap, i.e.  phys
+  // mem manager boundary. the actual processing of modules is done later, for
+  // now we're just interested in how much space that'll take.
+  uintptr_t pmm_start = (uintptr_t)&_ld_kernel_phys_end;
+  ALIGN(pmm_start, 0x4)
+  PRINTF("pmm_start before processing modules is %lx\n", pmm_start)
   for (struct mb2_tag *tag =
            (struct mb2_tag *)((uint8_t *)mb2 + sizeof(struct mb2_prologue));
        MB2_TAG_TYPE_END != tag->type; tag = next_tag(tag)) {
@@ -65,25 +71,37 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
       PRINTF("found module with string %s\n", module->string)
       if (!strcmp(module->string, "initrd")) {
         initrd_module = module;
+      } else {
+        // don't include initrd in module size calculation--we'll
+        // keep it where it was given to us
+        pmm_start += tag->size;
       }
       break;
     }
     case MB2_TAG_TYPE_MEM_INFO: {
       mem_info = (struct mb2_mem_info *)tag;
+      pmm_start += tag->size;
       break;
     }
     case MB2_TAG_TYPE_MMAP: {
       mmap = (struct mb2_mmap *)tag;
+      pmm_start += tag->size;
       break;
     }
     }
+    PRINTF("moving pmm_start to %lx\n", pmm_start)
   }
   PRINTF("collected mb2 info\n")
+  ALIGN(pmm_start, 0x1000)
+  PRINTF("pmm_start after processing modules is %lx\n", pmm_start)
 
   if (NULL == mem_info) {
     PRINTF("didn't find mem_info tag!\n")
     return;
   }
+  paging_init(pmm_start, mem_info->mem_upper);
+  PRINTF("paging initialized at %lx with %lx bytes\n", pmm_start,
+         mem_info->mem_upper)
 
   if (NULL == mmap) {
     PRINTF("didn't find mmap tag!\n")
@@ -95,11 +113,6 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     PRINTF("mmap @ %x base %lx size %lx type %d\n", (uint32_t)entry,
            (long)entry->base, (long)entry->size, entry->type)
     if (MB2_MMAP_AVAILABLE == entry->type && 0x0 != entry->base) {
-      // todo: this assumes (only) one region of available memory
-      // might be nice to assert(entry->size == mem_info->mem_upper);
-      paging_init(entry->base, entry->size);
-      PRINTF("paging initialized at %lx with %lx bytes\n", (long)entry->base,
-             (long)entry->size)
       for (uintptr_t p = entry->base; p < entry->base + entry->size;
            p += PAGE_SIZE_BYTES) {
         pmap(p, p, true, false);
@@ -108,10 +121,6 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     }
   }
   PRINTF("paging ready\n")
-  if (mem_info->mem_upper / 4 != get_num_pages()) {
-    PRINTF("we have %lx bytes worth of  uninitialized pages in upper mem\n",
-           mem_info->mem_upper - (get_num_pages() * 4))
-  }
 
   heap_init();
   PRINTF("heap ready\n")
