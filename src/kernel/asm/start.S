@@ -2,8 +2,8 @@
 .set ISA,      0
 .set LENGTH,   0x10
 .set CHECKSUM, -(MAGIC + ISA + LENGTH)
-.set KERNEL_PAGE_NUMBER, (0xc0000000 >> 22) // 768th PD entry
-.set READ_WRITE_PRESENT, 0x00000083
+.set KERNEL_PDI, (0xc0000000 >> 22) // 768th PD entry
+.set READ_WRITE_PRESENT, 0x00000003
 
 .section .multiboot2, "a", @progbits
 .align 4
@@ -13,27 +13,35 @@
 .long CHECKSUM
 
 .align 4096
+kernel_page_table:
+.skip 4096
+kernel_page_table_end:
+
+.global kernel_page_directory
 kernel_page_directory:
-// identity map first mb, containing boot info
-.long READ_WRITE_PRESENT
-.skip (KERNEL_PAGE_NUMBER - 1) * 4, 0
-// identity map kernel
-.long READ_WRITE_PRESENT
-.skip (1024 - KERNEL_PAGE_NUMBER - 1) * 4, 0
+.skip 4096
 
 .section .prelude, "ax", @progbits
 .align 16
 .global _start
 .type _start, @function
 _start:
-      lea kernel_page_directory, %ecx
-      mov %ecx, %cr3
+      mov $READ_WRITE_PRESENT, %edx
+      lea kernel_page_table, %ecx
+  map_kernel:
+      mov %edx, (%ecx)
+      add $0x1000, %edx
+      add $0x4, %ecx
+      cmp $kernel_page_table_end, %ecx
+      jl map_kernel
 
-      // todo: check if the next two blocks are actually what we want
-      // enable 4mb pages
-      mov %cr4, %ecx
-      orl $0x00000010, %ecx
-      mov %ecx, %cr4
+      mov $KERNEL_PDI, %edx
+      lea kernel_page_directory, %ecx
+      mov $kernel_page_table, (%ecx)
+      orl $READ_WRITE_PRESENT, (%ecx)
+      mov $kernel_page_table, (%ecx, %edx, 4)
+      orl $READ_WRITE_PRESENT, (%ecx, %edx, 4)
+      mov %ecx, %cr3
 
       // enable paging
       mov %cr0, %ecx
@@ -46,9 +54,6 @@ _start:
 .section .text
 .align 4
 _higher_half_start:
-      // clear identity mapping
-      // movl $0x0, kernel_page_directory
-
       // flush tlb
       mov %cr3, %ecx
       mov %ecx, %cr3

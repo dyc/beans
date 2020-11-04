@@ -3,7 +3,7 @@
 
 #include <kernel/mem.h>
 
-// todo: from here
+// todo: delete from here
 #include <kernel/libc.h>
 #include <kernel/printf.h>
 #include <kernel/serial.h>
@@ -28,19 +28,31 @@ struct node {
 struct node *free_ptr = NULL;
 size_t num_pages;
 uintptr_t end;
-uintptr_t *pd;
 
-uintptr_t allocate_page() {
-  if (free_ptr == NULL || (uintptr_t)free_ptr == end) {
-    return 0;
-  }
+// kernel pd is initialized to the temporary pd we use to higher half
+// ourselves. we'll be using it to bootstrap pmm after which it'll be
+// reinstantiated via pmm.
+extern uintptr_t kernel_page_directory;
+uintptr_t *pd = &kernel_page_directory;
 
+uintptr_t start_allocate_page() {
+  return free_ptr == NULL || (uintptr_t)free_ptr == end ? 0
+                                                        : (uintptr_t)free_ptr;
+}
+
+uintptr_t finish_allocate_page() {
   uintptr_t ret = (uintptr_t)free_ptr;
   free_ptr = free_ptr->next;
   return ret;
 }
 
-void free_page(uintptr_t addr) {
+void start_deallocate_page(uintptr_t addr) {
+  struct node *n = (struct node *)addr;
+  n->next = free_ptr;
+  free_ptr = n;
+}
+
+void finish_deallocate_page(uintptr_t addr) {
   struct node *n = (struct node *)addr;
   n->next = free_ptr;
   free_ptr = n;
@@ -64,13 +76,14 @@ inline size_t pti(uintptr_t vaddr) { return (vaddr >> 12) & 0x3ff; }
 
 uintptr_t get_pte(uintptr_t vaddr, bool create) {
   struct pte *pte = (struct pte *)pd[pdi(vaddr)];
-  PRINTF("pte: %lx\n", pte)
   if (!pte->present) {
     if (!create) {
       return 0;
     }
 
-    pd[pdi(vaddr)] = allocate_page();
+    pd[pdi(vaddr)] = start_allocate_page();
+    // identity map this pt here?
+    finish_allocate_page();
     pte->present = 1;
     pte->read_write = 1;
   }
@@ -82,19 +95,34 @@ void paging_init(uintptr_t start, size_t size) {
   free_ptr = (struct node *)start;
   num_pages = size / 4;
 
-  // todo: going to fault here since most of memory is not yet mapped...
-  // figure out how to set up pmm stack given ^
-  struct node *prev = free_ptr;
-  for (size_t i = 1; i < num_pages; ++i) {
-    end = start + i * PAGE_SIZE_BYTES;
-    prev->next = (struct node *)end;
-    prev = prev->next;
-    PRINTF("marked %lx\n", end)
-  }
+  // set up free page linked list for pmm. since paging is enabled by this
+  // point, we'll need to prop up a temporary kernel pd and map pages as we
+  // mark them as free. we can use first free page to back these mappings.
+  // immediately afterwards, we'll toss this bootstrap for our actual kernel
+  // pd.
+  uintptr_t *pt = &start;
 
-  pd = (uintptr_t *)allocate_page();
-  PRINTF("paging init, free_ptr: %lx, num_pages: %lx, pd: %lx\n",
-         (uintptr_t)free_ptr, num_pages, pd)
+  // todo: definitely missing something obvious here...we get garbage in n here
+  // using an int works?
+  struct node *n = (struct node *)(start + PAGE_SIZE_BYTES);
+  for (size_t i = 1; i < num_pages; ++i) {
+    end = (uintptr_t)n + PAGE_SIZE_BYTES;
+    // todo: accommodate dma
+    pd[pdi(start)] = *pt;
+    pt[pti(start)] = ((uintptr_t)n & ~0x3ff) | 0x3;
+
+    n->next = (struct node *)end;
+    n = n->next;
+  }
+  PRINTF("initialized pmm ll with %lx pages\n", num_pages)
+  // todo: figure out how to reclaim the first page?
+
+  pd = (uintptr_t *)start_allocate_page();
+  finish_allocate_page();
+  PRINTF("done paging init\n")
+  PRINTF("free_ptr %lx num_pages %lx pd %lx\n", (uintptr_t)free_ptr, num_pages,
+         pd)
+  // todo: set_crt3(pd);
 }
 
 void pmap(uintptr_t vaddr, uintptr_t paddr, bool writable, bool user) {
