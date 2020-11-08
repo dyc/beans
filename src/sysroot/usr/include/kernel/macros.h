@@ -1,6 +1,10 @@
 #ifndef BEANS_KERNEL_MACROS_H_
 #define BEANS_KERNEL_MACROS_H_
 
+#include <kernel/libc.h>
+#include <kernel/printf.h>
+#include <kernel/serial.h>
+
 #define IGNORE(x) (void)x;
 #define ALIGN(x, a) ((x) += (a) - ((x) % (a)));
 #define PRINTF(fmt, ...)                                                       \

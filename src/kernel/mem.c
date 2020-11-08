@@ -101,6 +101,7 @@ void paging_init(uintptr_t start, size_t size) {
     n = n->next;
   }
   PRINTF("initialized pmm ll with %lx pages\n", num_pages)
+  while(1);
   // todo: figure out how to reclaim the first page?
 
   pd = (uintptr_t *)start_allocate_page();
