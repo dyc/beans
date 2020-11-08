@@ -43,6 +43,7 @@ void idt_install() {
     idt_set_gate(i, 0, 0, 0);
   }
 
+  // todo: delete this
   char buf[256] = {0};
   sprintf(buf, "loading idt to %x\n", (uintptr_t)&idt.idtr);
   serial_write(SERIAL_PORT_COM1, buf);

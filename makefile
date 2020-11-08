@@ -231,7 +231,7 @@ run: $(BIN_DIR)/beans.img
 
 # todo: look into using elf symbols with flat binary (e.g. for loadk)
 .PHONY: gdb
-gdb: debug $(BOOT_BUILD_DIR)/loadk | $(SYMBOLS_BUILD_DIR)
+gdb: debug | $(SYMBOLS_BUILD_DIR)
 	$(OBJCOPY) --only-keep-debug $(BIN_DIR)/beans $(SYMBOLS_BUILD_DIR)/beans.debug
 	$(OBJCOPY) --strip-debug $(BIN_DIR)/beans
 	$(OBJCOPY) --only-keep-debug $(BOOT_BUILD_DIR)/loadk $(SYMBOLS_BUILD_DIR)/loadk.debug

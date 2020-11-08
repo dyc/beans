@@ -4,18 +4,7 @@
 #include <kernel/mem.h>
 
 // todo: delete from here
-#include <kernel/libc.h>
-#include <kernel/printf.h>
-#include <kernel/serial.h>
-
-#define PRINTF(fmt, ...)                                                       \
-  {                                                                            \
-    memset(buf, 0, sizeof(buf) / sizeof(buf[0]));                              \
-    int n = sprintf(buf, "[%s:%d] ", __func__, __LINE__);                      \
-    sprintf(&buf[n], fmt, ##__VA_ARGS__);                                      \
-    serial_write(SERIAL_PORT_COM1, buf);                                       \
-  };
-
+#include <kernel/macros.h>
 static char buf[256] = {0};
 // todo: to here
 
@@ -100,10 +89,7 @@ void paging_init(uintptr_t start, size_t size) {
   // mark them as free. we can use first free page to back these mappings.
   // immediately afterwards, we'll toss this bootstrap for our actual kernel
   // pd.
-  uintptr_t *pt = &start;
-
-  // todo: definitely missing something obvious here...we get garbage in n here
-  // using an int works?
+  uintptr_t *pt = (uintptr_t *)start;
   struct node *n = (struct node *)(start + PAGE_SIZE_BYTES);
   for (size_t i = 1; i < num_pages; ++i) {
     end = (uintptr_t)n + PAGE_SIZE_BYTES;

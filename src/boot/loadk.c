@@ -10,8 +10,8 @@
 #define PRINTF(fmt, ...)                                                       \
   {                                                                            \
     memset(buf, 0, sizeof(buf) / sizeof(buf[0]));                              \
-    int n = sprintf(buf, "[%s:%d] ", __func__, __LINE__);                      \
-    sprintf(&buf[n], fmt, ##__VA_ARGS__);                                      \
+    int _printf_n = sprintf(buf, "[%s:%d] ", __func__, __LINE__);              \
+    sprintf(&buf[_printf_n], fmt, ##__VA_ARGS__);                              \
     serial_write(buf);                                                         \
   };
 
@@ -160,6 +160,7 @@ __attribute__((section(".text.loadk"))) void loadk(size_t smaps,
          mem_info->mem_upper)
 
   // ---- mb2 modules --------
+  // todo: relocate this above kernel to make pmm initialization easier?
   struct mb2_module *initrd_mod = (struct mb2_module *)next_tag(&mmap->tag);
   initrd_mod->tag.type = MB2_TAG_TYPE_MODULE;
   initrd_mod->start = (uint32_t)initrd;

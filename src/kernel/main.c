@@ -10,14 +10,6 @@
 #include <sys/device.h>
 #include <sys/kbd.h>
 
-#define PRINTF(fmt, ...)                                                       \
-  {                                                                            \
-    memset(buf, 0, sizeof(buf) / sizeof(buf[0]));                              \
-    int n = sprintf(buf, "[%s:%d] ", __func__, __LINE__);                      \
-    sprintf(&buf[n], fmt, ##__VA_ARGS__);                                      \
-    serial_write(SERIAL_PORT_COM1, buf);                                       \
-  };
-
 static char buf[256] = {0};
 static struct mb2_module *initrd_module = NULL;
 static struct mb2_mem_info *mem_info = NULL;
