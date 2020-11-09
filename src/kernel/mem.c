@@ -15,7 +15,6 @@ struct node {
 };
 
 struct node *free_ptr = NULL;
-size_t num_pages;
 uintptr_t end;
 
 // kernel pd is initialized to the temporary pd we use to higher half
@@ -81,34 +80,32 @@ uintptr_t get_pte(uintptr_t vaddr, bool create) {
 }
 
 void paging_init(uintptr_t start, size_t size) {
-  free_ptr = (struct node *)start;
-  num_pages = size / 4;
+  end = start + size;
+  PRINTF("initializing pmm at %lx with %lx bytes\n", start, size)
 
   // set up free page linked list for pmm. since paging is enabled by this
   // point, we'll need to prop up a temporary kernel pd and map pages as we
   // mark them as free. we can use first free page to back these mappings.
   // immediately afterwards, we'll toss this bootstrap for our actual kernel
   // pd.
-  uintptr_t *pt = (uintptr_t *)start;
-  struct node *n = (struct node *)(start + PAGE_SIZE_BYTES);
-  for (size_t i = 1; i < num_pages; ++i) {
-    end = (uintptr_t)n + PAGE_SIZE_BYTES;
+  uintptr_t *temp_pt = (uintptr_t *)start;
+  for (uintptr_t current = start + PAGE_SIZE_BYTES; current < end;
+       current += PAGE_SIZE_BYTES) {
     // todo: accommodate dma
-    pd[pdi(start)] = *pt;
-    pt[pti(start)] = ((uintptr_t)n & ~0x3ff) | 0x3;
-
-    n->next = (struct node *)end;
-    n = n->next;
+    // todo: maybe use pde and pte ptrs here
+    // use the existing kernel pt if pte is already set
+    if (!pd[pdi(current)]) {
+      pd[pdi(current)] = ((uintptr_t)temp_pt & ~0xfff) | 0x3;
+    }
+    temp_pt[pti(current)] = (current & ~0xfff) | 0x3;
+    *((uintptr_t *)current) = current + PAGE_SIZE_BYTES;
   }
-  PRINTF("initialized pmm ll with %lx pages\n", num_pages)
-  while(1);
-  // todo: figure out how to reclaim the first page?
-
+  // todo: map temp_pt and add to start of free list
+  // *((uintptr_t *)free_ptr) = start + PAGE_SIZE_BYTES;
+  free_ptr = (struct node *)(start + PAGE_SIZE_BYTES);
   pd = (uintptr_t *)start_allocate_page();
   finish_allocate_page();
-  PRINTF("done paging init\n")
-  PRINTF("free_ptr %lx num_pages %lx pd %lx\n", (uintptr_t)free_ptr, num_pages,
-         pd)
+  PRINTF("new kernel pd is at %lx\n", pd)
   // todo: set_crt3(pd);
 }
 
