@@ -7,6 +7,7 @@
 
 extern const uint32_t PAGE_SIZE_BYTES;
 extern char _ld_kernel_phys_end;
+extern char _ld_kernel_virt_start;
 
 struct pde {
   unsigned int present : 1;

@@ -13,6 +13,7 @@
 .long CHECKSUM
 
 .align 4096
+.global kernel_page_table
 kernel_page_table:
 .skip 4096
 kernel_page_table_end:

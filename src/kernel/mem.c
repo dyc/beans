@@ -21,26 +21,21 @@ uintptr_t end;
 // ourselves. we'll be using it to bootstrap pmm after which it'll be
 // reinstantiated via pmm.
 extern uintptr_t kernel_page_directory;
+extern uintptr_t kernel_page_table;
 uintptr_t *pd = &kernel_page_directory;
 
-uintptr_t start_allocate_page() {
-  return free_ptr == NULL || (uintptr_t)free_ptr == end ? 0
-                                                        : (uintptr_t)free_ptr;
-}
+// todo: may need to break this up into two stages
+uintptr_t allocate_page() {
+  if (free_ptr == NULL || (uintptr_t)free_ptr == end) {
+    return 0;
+  }
 
-uintptr_t finish_allocate_page() {
   uintptr_t ret = (uintptr_t)free_ptr;
   free_ptr = free_ptr->next;
   return ret;
 }
 
-void start_deallocate_page(uintptr_t addr) {
-  struct node *n = (struct node *)addr;
-  n->next = free_ptr;
-  free_ptr = n;
-}
-
-void finish_deallocate_page(uintptr_t addr) {
+void deallocate_page(uintptr_t addr) {
   struct node *n = (struct node *)addr;
   n->next = free_ptr;
   free_ptr = n;
@@ -56,22 +51,20 @@ uintptr_t get_cr3() {
   return ret;
 }
 
-void set_crt3(uintptr_t addr) { asm volatile("mov %%eax, %%cr3" ::"a"(addr)); }
+void set_cr3(uintptr_t addr) { asm volatile("mov %%eax, %%cr3" ::"a"(addr)); }
 
 inline size_t pdi(uintptr_t vaddr) { return (vaddr >> 22) & 0x3ff; }
 
 inline size_t pti(uintptr_t vaddr) { return (vaddr >> 12) & 0x3ff; }
 
 uintptr_t get_pte(uintptr_t vaddr, bool create) {
-  struct pte *pte = (struct pte *)pd[pdi(vaddr)];
+  struct pte *pte = (struct pte *)&pd[pdi(vaddr)];
   if (!pte->present) {
     if (!create) {
       return 0;
     }
 
-    pd[pdi(vaddr)] = start_allocate_page();
-    // identity map this pt here?
-    finish_allocate_page();
+    pd[pdi(vaddr)] = allocate_page();
     pte->present = 1;
     pte->read_write = 1;
   }
@@ -80,33 +73,35 @@ uintptr_t get_pte(uintptr_t vaddr, bool create) {
 }
 
 void paging_init(uintptr_t start, size_t size) {
+  free_ptr = (struct node *)(start + PAGE_SIZE_BYTES);
   end = start + size;
   PRINTF("initializing pmm at %lx with %lx bytes\n", start, size)
 
   // set up free page linked list for pmm. since paging is enabled by this
-  // point, we'll need to prop up a temporary kernel pd and map pages as we
-  // mark them as free. we can use first free page to back these mappings.
-  // immediately afterwards, we'll toss this bootstrap for our actual kernel
-  // pd.
-  uintptr_t *temp_pt = (uintptr_t *)start;
-  for (uintptr_t current = start + PAGE_SIZE_BYTES; current < end;
-       current += PAGE_SIZE_BYTES) {
+  // point, we'll need to prop temporary ptes to map pages as we mark them as
+  // free. we can use first free page for this. immediately afterwards, we'll
+  // toss this bootstrap for our actual kernel pd.
+  uintptr_t *pt = (uintptr_t *)start;
+  uintptr_t current = start + PAGE_SIZE_BYTES;
+  for (; current < end; current += PAGE_SIZE_BYTES) {
     // todo: accommodate dma
     // todo: maybe use pde and pte ptrs here
     // use the existing kernel pt if pte is already set
     if (!pd[pdi(current)]) {
-      pd[pdi(current)] = ((uintptr_t)temp_pt & ~0xfff) | 0x3;
+      pd[pdi(current)] = ((uintptr_t)pt & ~0xfff) | 0x3;
     }
-    temp_pt[pti(current)] = (current & ~0xfff) | 0x3;
+    pt[pti(current)] = (current & ~0xfff) | 0x3;
     *((uintptr_t *)current) = current + PAGE_SIZE_BYTES;
   }
-  // todo: map temp_pt and add to start of free list
-  // *((uintptr_t *)free_ptr) = start + PAGE_SIZE_BYTES;
-  free_ptr = (struct node *)(start + PAGE_SIZE_BYTES);
-  pd = (uintptr_t *)start_allocate_page();
-  finish_allocate_page();
-  PRINTF("new kernel pd is at %lx\n", pd)
-  // todo: set_crt3(pd);
+
+  // recycle pt for kernel pt
+  memcpy(pt, &kernel_page_table, PAGE_SIZE_BYTES);
+
+  pd = (uintptr_t *)allocate_page();
+  pd[0] = ((uintptr_t)pt & ~0xfff) | 0x3;
+  pd[pdi((uintptr_t)&_ld_kernel_virt_start)] = ((uintptr_t)pt & ~0xfff) | 0x3;
+  set_cr3((uintptr_t)pd);
+  PRINTF("final kernel pt %lx and pd %lx\n", pt, pd)
 }
 
 void pmap(uintptr_t vaddr, uintptr_t paddr, bool writable, bool user) {

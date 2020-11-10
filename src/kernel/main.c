@@ -107,8 +107,8 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
     if (MB2_MMAP_AVAILABLE == entry->type && 0x0 != entry->base) {
       for (uintptr_t p = entry->base; p < entry->base + entry->size;
            p += PAGE_SIZE_BYTES) {
-        pmap(p, p, true, false);
-        // paging_mark_avail(p);
+        // todo: fix pmap
+        // pmap(p, p, true, false);
       }
     }
   }
