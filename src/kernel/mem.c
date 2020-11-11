@@ -85,12 +85,17 @@ void paging_init(uintptr_t start, size_t size) {
   uintptr_t current = start + PAGE_SIZE_BYTES;
   for (; current < end; current += PAGE_SIZE_BYTES) {
     // todo: accommodate dma
-    // todo: maybe use pde and pte ptrs here
     // use the existing kernel pt if pte is already set
     if (!pd[pdi(current)]) {
-      pd[pdi(current)] = ((uintptr_t)pt & ~0xfff) | 0x3;
+      struct pde *pde = (struct pde *)&pd[pdi(current)];
+      pde->present = 1;
+      pde->read_write = 1;
+      pde->table = (uintptr_t)pt >> 12;
     }
-    pt[pti(current)] = (current & ~0xfff) | 0x3;
+    struct pte *pte = (struct pte *)&pt[pti(current)];
+    pte->present = 1;
+    pte->read_write = 1;
+    pte->frame = (uintptr_t)current >> 12;
     *((uintptr_t *)current) = current + PAGE_SIZE_BYTES;
   }
 

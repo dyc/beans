@@ -16,8 +16,10 @@ struct pde {
   unsigned int write_through : 1;
   unsigned int cache_disabled : 1;
   unsigned int accessed : 1;
+  unsigned int : 1;
   unsigned int page_size : 1;
-  unsigned int unused : 1;
+  unsigned int global : 1;
+  unsigned int : 3;
   unsigned int table : 20;
 } __attribute__((packed));
 
@@ -29,7 +31,9 @@ struct pte {
   unsigned int cache_disabled : 1;
   unsigned int accessed : 1;
   unsigned int dirty : 1;
+  unsigned int pat_index : 1;
   unsigned int global : 1;
+  unsigned int : 3;
   unsigned int frame : 20;
 } __attribute__((packed));
 
