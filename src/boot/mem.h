@@ -13,7 +13,7 @@ struct smap_entry {
   uint64_t base;
   uint64_t size;
   uint32_t type;
-  uint32_t unused;
+  uint32_t _unused_0;
 } __attribute__((packed));
 
 void memset(void *dest, int c, size_t n) {

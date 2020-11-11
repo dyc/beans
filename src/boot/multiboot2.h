@@ -17,7 +17,7 @@ const uint32_t MB2_MMAP_BAD = 5;
 
 struct mb2_prologue {
   uint32_t size;
-  uint32_t unused;
+  uint32_t _unused_0;
 } __attribute__((packed));
 
 struct mb2_tag {
@@ -29,7 +29,7 @@ struct mb2_mmap_entry {
   uint64_t base;
   uint64_t size;
   uint32_t type;
-  uint32_t unused;
+  uint32_t _unused_0;
 } __attribute__((packed));
 
 struct mb2_mmap {
