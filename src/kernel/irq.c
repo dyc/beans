@@ -11,6 +11,9 @@ static const uint8_t ICW1_INIT = 0x10;
 static const uint8_t PIC1_OFFSET = 0x20;
 static const uint8_t PIC2_OFFSET = 0x28;
 static const uint8_t ICW4_8086 = 0x01;
+static const uint8_t KCODE_SELECTOR = 0x08;
+static const uint8_t INTERRUPT32_PRESENT = 0x8e;
+static const uint8_t TRAP32_PRESENT = 0x8f;
 
 extern void irq_handler_start32();
 extern void irq_handler_start33();
@@ -105,14 +108,16 @@ void irq_install() {
   for (size_t i = 0; i < n; ++i) {
     idt_set_gate(PIC1_OFFSET + i,   // gate
                  (uint32_t)irqs[i], // offset
-                 0x08,              // selector (kcode segment)
-                 0x8E               // flags
-    );
+                 KCODE_SELECTOR, INTERRUPT32_PRESENT);
   }
 }
 
-void irq_install_handler(size_t irq, int (*handler)(struct irq_state *)) {
+void irq_install_isr(size_t irq, int (*handler)(struct irq_state *)) {
   disable_int();
   irq_handlers[irq] = handler;
   enable_int();
+}
+
+void irq_install_trap(size_t irq, int (*handler)(struct irq_state *)) {
+  idt_set_gate(irq, (uint32_t)handler, KCODE_SELECTOR, TRAP32_PRESENT);
 }

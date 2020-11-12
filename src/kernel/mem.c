@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <kernel/desc.h>
 #include <kernel/mem.h>
 
 // todo: delete from here
@@ -9,6 +10,7 @@ static char buf[256] = {0};
 // todo: to here
 
 const uint32_t PAGE_SIZE_BYTES = 0x1000;
+const size_t PAGE_FAULT_OFFSET = 14;
 
 struct node {
   struct node *next;
@@ -73,6 +75,13 @@ uintptr_t *get_pte(uintptr_t vaddr, bool create) {
   return &((uintptr_t *)(pde->table << 12))[pti(vaddr)];
 }
 
+int page_fault_handler(struct irq_state *state) {
+  (void)state;
+  PRINTF("in page_fault_handler\n")
+  while (1)
+    ;
+}
+
 void paging_init(uintptr_t start, size_t size) {
   free_ptr = (struct node *)(start + PAGE_SIZE_BYTES);
   end = start + size;
@@ -109,6 +118,8 @@ void paging_init(uintptr_t start, size_t size) {
   pd[pdi((uintptr_t)&_ld_kernel_virt_start)] = ((uintptr_t)pt & ~0xfff) | 0x3;
   set_cr3((uintptr_t)pd);
   PRINTF("final kernel pt %lx and pd %lx\n", pt, pd)
+
+  irq_install_trap(PAGE_FAULT_OFFSET, page_fault_handler);
 }
 
 void pmap(uintptr_t vaddr, uintptr_t paddr, bool writable, bool user) {

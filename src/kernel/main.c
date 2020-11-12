@@ -113,6 +113,11 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   }
   PRINTF("paging ready\n")
 
+  // TODO: remove this test
+  uintptr_t *page_fault_ptr = (uintptr_t *)0xa0000000;
+  uintptr_t do_fault = *page_fault_ptr;
+  (void)do_fault;
+
   heap_init();
   PRINTF("heap ready\n")
 

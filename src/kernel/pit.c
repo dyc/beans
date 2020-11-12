@@ -45,4 +45,4 @@ void pit_set_freq_hz(size_t hz) {
   outb(CHANNEL0_PORT, (divisor >> 8) & 0xFF);
 }
 
-void pit_install() { irq_install_handler(PIT_IRQ, pit_handler); }
+void pit_install() { irq_install_isr(PIT_IRQ, pit_handler); }

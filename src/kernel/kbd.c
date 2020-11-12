@@ -21,4 +21,4 @@ static int keyboard_handler(struct irq_state *s) {
   return 1;
 }
 
-void keyboard_install() { irq_install_handler(KEYBOARD_IRQ, keyboard_handler); }
+void keyboard_install() { irq_install_isr(KEYBOARD_IRQ, keyboard_handler); }
