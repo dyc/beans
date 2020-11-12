@@ -57,19 +57,20 @@ inline size_t pdi(uintptr_t vaddr) { return (vaddr >> 22) & 0x3ff; }
 
 inline size_t pti(uintptr_t vaddr) { return (vaddr >> 12) & 0x3ff; }
 
-uintptr_t get_pte(uintptr_t vaddr, bool create) {
-  struct pte *pte = (struct pte *)&pd[pdi(vaddr)];
-  if (!pte->present) {
+uintptr_t *get_pte(uintptr_t vaddr, bool create) {
+  struct pde *pde = (struct pde *)&pd[pdi(vaddr)];
+  if (!pde->present) {
     if (!create) {
       return 0;
     }
 
-    pd[pdi(vaddr)] = allocate_page();
-    pte->present = 1;
-    pte->read_write = 1;
+    pde->present = 1;
+    pde->read_write = 1;
+    uintptr_t *pt = (uintptr_t *)allocate_page();
+    memset(pt, 0, PAGE_SIZE_BYTES);
+    pde->table = (uintptr_t)pt >> 12;
   }
-  uintptr_t *pt = (uintptr_t *)(pd[pdi(vaddr)] & ~0xfff);
-  return pt[pti(vaddr)];
+  return &((uintptr_t *)(pde->table << 12))[pti(vaddr)];
 }
 
 void paging_init(uintptr_t start, size_t size) {
@@ -103,6 +104,7 @@ void paging_init(uintptr_t start, size_t size) {
   memcpy(pt, &kernel_page_table, PAGE_SIZE_BYTES);
 
   pd = (uintptr_t *)allocate_page();
+  memset(pd, 0, PAGE_SIZE_BYTES);
   pd[0] = ((uintptr_t)pt & ~0xfff) | 0x3;
   pd[pdi((uintptr_t)&_ld_kernel_virt_start)] = ((uintptr_t)pt & ~0xfff) | 0x3;
   set_cr3((uintptr_t)pd);
@@ -119,7 +121,7 @@ void pmap(uintptr_t vaddr, uintptr_t paddr, bool writable, bool user) {
 }
 
 void punmap(uintptr_t vaddr) {
-  uintptr_t *pte = (uintptr_t *)get_pte(vaddr, false);
+  uintptr_t *pte = get_pte(vaddr, false);
   if (pte == 0) {
     return;
   }
