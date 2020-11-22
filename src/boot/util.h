@@ -14,19 +14,6 @@ size_t strlen(const char *s) {
   return len;
 }
 
-// todo: these
-long long __divdi3(long long a, long long b) {
-  (void)a;
-  (void)b;
-  return 0;
-}
-
-long long __moddi3(long long a, long long b) {
-  (void)a;
-  (void)b;
-  return 0;
-}
-
 static size_t decwidth(int value) {
   if (value < 0) {
     value *= -1;
@@ -53,18 +40,18 @@ static size_t declwidth(long value) {
   return width;
 }
 
-static size_t decllwidth(long long value) {
-  if (value < 0) {
-    value *= -1;
-  }
-
-  size_t width = 0;
-  do {
-    ++width;
-    value = value / 10;
-  } while (value > 0);
-  return width;
-}
+// static size_t decllwidth(long long value) {
+//   if (value < 0) {
+//     value *= -1;
+//   }
+//
+//   size_t width = 0;
+//   do {
+//     ++width;
+//     value = value / 10;
+//   } while (value > 0);
+//   return width;
+// }
 
 static size_t hexwidth(unsigned int value) {
   size_t width = 0;
@@ -114,20 +101,20 @@ static int printdecl(char *out, long value) {
   return start - out + 1;
 }
 
-static int printdecll(char *out, long long value) {
-  char *stop = out;
-  if (value < 0) {
-    *stop = '-';
-    ++stop;
-  }
-
-  char *start = stop + decllwidth(value) - 1;
-  for (char *o = start; o >= stop; --o) {
-    *o = (value % 10) + '0';
-    value /= 10;
-  }
-  return start - out + 1;
-}
+// static int printdecll(char *out, long long value) {
+//   char *stop = out;
+//   if (value < 0) {
+//     *stop = '-';
+//     ++stop;
+//   }
+//
+//   char *start = stop + decllwidth(value) - 1;
+//   for (char *o = start; o >= stop; --o) {
+//     *o = (value % 10) + '0';
+//     value /= 10;
+//   }
+//   return start - out + 1;
+// }
 
 static int printhex(char *out, unsigned int value) {
   char *stop = out;
@@ -205,7 +192,7 @@ int sprintf(char *out, const char *fmt, ...) {
       } else if (1 == length_modifier) {
         o += printdecl(o, va_arg(arg_p, long));
       } else if (2 == length_modifier) {
-        o += printdecll(o, va_arg(arg_p, long long));
+        // o += printdecll(o, va_arg(arg_p, long long));
       }
       ++f;
       break;

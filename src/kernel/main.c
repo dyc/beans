@@ -102,21 +102,27 @@ void kmain(struct mb2_prologue *mb2, uint32_t mb2_magic) {
   for (struct mb2_mmap_entry *entry = mmap->entries;
        (uintptr_t)entry < (uintptr_t)((uint8_t *)mmap + mmap->tag.size);
        ++entry) {
-    PRINTF("mmap @ %x base %lx size %lx type %d\n", (uint32_t)entry,
-           (long)entry->base, (long)entry->size, entry->type)
+    PRINTF("mmap @ %x base %llx size %llx type %d\n", (uint32_t)entry,
+           entry->base, entry->size, entry->type)
     if (MB2_MMAP_AVAILABLE == entry->type && 0x0 != entry->base) {
-      for (uintptr_t p = entry->base; p < entry->base + entry->size;
+      PRINTF("pmap'ing %lx to %llx\n", entry->base, (entry->base + entry->size))
+      for (unsigned long long p = entry->base; p < entry->base + entry->size;
            p += PAGE_SIZE_BYTES) {
-        pmap(p, p, true, false);
+        if (p > 0xffffffff) {
+          PRINTF("womp\n")
+          break;
+        }
+        pmap((uintptr_t)p, (uintptr_t)p, true, false);
       }
     }
   }
   PRINTF("paging ready\n")
 
   // TODO: remove this test
-  uintptr_t *page_fault_ptr = (uintptr_t *)0xa0000000;
-  uintptr_t do_fault = *page_fault_ptr;
-  (void)do_fault;
+  for (size_t i = 0; i < 0xffffffff; ++i) {
+    uintptr_t *page_fault_ptr = (uintptr_t *)i;
+    *page_fault_ptr = 0xdeadbeef;
+  }
 
   heap_init();
   PRINTF("heap ready\n")
