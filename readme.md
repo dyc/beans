@@ -4,74 +4,82 @@ in early on the next big quarantine hobby :'-)
 
 ----
 
-i'm running macos 10.14.6, with gcc 4.2.1. before setting up our cross
-toolchain, let's grab latest gcc (10.2.0):
+i'm on an m1 running macos 13.13.1. we'll need gcc--i built and installed 13.2.0.
+as stated in gcc's docs, build _outside_ the source directory. there are
+also some build and runtime dependencies to be wary of.
 
 ```sh
-mkdir gccbuild
-cd gccbuild
-../gcc-10.2.0/configure \
---prefix=/usr/local/gcc-10.2.0 \
---program-suffix=-10.2 \
+mkdir gcc-13.2.0.host.build
+cd gcc-13.2.0.host.build
+../gcc-13.2.0/configure \
+--prefix=/usr/local/gcc-13.2.0 \
+--program-suffix=-13.2 \
 --enable-checking=release \
---with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+--with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk \
+--with-gmp-include=... \
+--with-gmp-lib=... \
+--with-mpc=... \
+--with-mpfr-include=... \
+--with-mpfr-lib=...
 
-# this took 16? hours on my poor lil laptop :'-)
 make -j8
 sudo make install-strip
 ```
 
-and use it:
+next, set up the environment:
 
 ```sh
-export CC=/usr/local/gcc-10.2.0/bin/gcc-10.2
-export CXX=/usr/local/gcc-10.2.0/bin/g++-10.2
-export CPP=/usr/local/gcc-10.2.0/bin/cpp-10.2
-export LD=/usr/local/gcc-10.2.0/bin/gcc-10.2
-```
+# use gcc we just installed
+export CC=/usr/local/gcc-13.2.0/bin/gcc-13.2
+export CXX=/usr/local/gcc-13.2.0/bin/g++-13.2
+export CPP=/usr/local/gcc-13.2.0/bin/cpp-13.2
+export LD=/usr/local/gcc-13.2.0/bin/gcc-13.2
 
-next, set a home for our cross builds so that they're isolated from host
-tools, and what we're targeting:
-
-```sh
+# home for our cross toolchain so that its isolated from the hosts'
 export PREFIX=/usr/local/cross
 export PATH="$PREFIX/bin:$PATH"
+
 export TARGET=i686-elf
 ```
 
-now build binutils for our cross compiler. do this before building gcc,
-which presumably links target libraries--i ran into issues when i tried using
-gcc built without cross binutils:
+build cross binutils. do this before building cross gcc, which will link
+target libraries. i had to install texinfo first.
 
 ```sh
-mkdir crossbin
-cd crossbin
-../binutils-2.35/configure \
+mkdir binutils-2.41.cross.build
+cd binutils-2.41.cross.build
+../binutils-2.41/configure \
 --target=$TARGET \
 --prefix="$PREFIX" \
 --with-sysroot \
 --disable-nls \
---disable-werror
+--disable-werror \
+--with-gmp-include=... \
+--with-gmp-lib=... \
+--with-mpfr-include=... \
+--with-mpfr-lib=...
 
 make -j8
 sudo make install
 ```
 
-and the cross compiler:
+finally, our cross compiler::
 
 ```sh
-cd gcc-10.2.0
-./contrib/download_prequisites
-cd ..
-mkdir crossgcc
-cd crossgcc
-../gcc-10.2.0/configure \
+mkdir gcc-13.2.0.cross.build
+cd gcc-13.2.0.cross.build
+../gcc-13.2.0/configure \
 --prefix="$PREFIX" \
 --target=$TARGET \
 --disable-nls \
 --enable-languages=c,c++ \
 --without-headers \
---with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+--with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk \
+--with-gmp-include=... \
+--with-gmp-lib=... \
+--with-mpc=... \
+--with-mpfr-include=... \
+--with-mpfr-lib=...
 
 make -j8 all-gcc
 make -j8 all-target-libgcc

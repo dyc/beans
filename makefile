@@ -3,7 +3,7 @@ AS:=$(PREFIX)/bin/i686-elf-as
 CC:=$(PREFIX)/bin/i686-elf-gcc
 LD:=$(PREFIX)/bin/i686-elf-ld
 OBJCOPY:=$(PREFIX)/bin/i686-elf-objcopy
-HOSTCC:=/usr/bin/gcc
+HOSTCC:=/usr/local/gcc-13.2.0/bin/gcc-13.2
 
 BUILD_DIR:=build
 BIN_DIR:=$(BUILD_DIR)/bin

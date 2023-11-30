@@ -5,8 +5,8 @@ if (($# != 2)) || [[ ! -d $1 ]] || [[ ! -d $2 ]]; then
  echo "expected arguments: [output directory] [sysroot]"
  exit 1
 fi
-OUT=$(realpath -s $1)
-SYSROOT=$(realpath -s $2)
+OUT=$(realpath $1)
+SYSROOT=$(realpath $2)
 IMAGE=${OUT}/beans.img
 MNT=${OUT}/mnt
 LOADK=${OUT}/loadk
